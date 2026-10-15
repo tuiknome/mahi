@@ -3067,7 +3067,9 @@ function showAuth(msg, err){
   document.body.classList.add("signed-out");
   let el = $("#auth"); if(!el){ el = document.createElement("div"); el.id = "auth"; document.body.appendChild(el); }
    const keepE = ($("#authEmail")||{}).value || "", keepP = ($("#authPass")||{}).value || "";
+  const keepE = ($("#authEmail")||{}).value || "", keepP = ($("#authPass")||{}).value || "";
   el.innerHTML = authHTML(msg, err);
+  if($("#authEmail")) $("#authEmail").value = keepE; if($("#authPass")) $("#authPass").value = keepP;
   if($("#authEmail")) $("#authEmail").value = keepE; if($("#authPass")) $("#authPass").value = keepP;
 }
 async function authAction(kind){
