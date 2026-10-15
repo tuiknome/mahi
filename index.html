@@ -410,6 +410,10 @@ a.watch{font-size:13px;font-weight:600;color:var(--protein);text-decoration:none
 body.signed-out header.top, body.signed-out main, body.signed-out .bottomnav{display:none!important}
 #auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px 16px;background:var(--bg)}
 .auth-card{width:min(400px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}
+.acct-btn{border-radius:50%;margin-left:6px;color:var(--ink)}
+.acct-ini{font-weight:700;font-size:13px;letter-spacing:.02em}
+.acct-big{width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.acct-big svg{width:26px;height:26px}
 .stack-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 /* Title Case for titles and names */
 h2,h3,h4,.wk-title{text-transform:capitalize}
@@ -457,6 +461,7 @@ h2,h3,h4,.wk-title{text-transform:capitalize}
         <label class="datebtn"><span id="datelabel"></span><input type="date" id="datepick" aria-label="Pick a date"></label>
         <button class="iconbtn" data-act="nextday" aria-label="Next day">›</button>
         <button class="todaylink" data-act="today" id="todaybtn">Today</button>
+        <button class="iconbtn acct-btn" data-sb="account" id="acctBtn" aria-label="Account and profile"></button>
       </div>
     </div>
     <nav class="tabs" role="tablist" id="tabs"></nav>
@@ -472,6 +477,7 @@ h2,h3,h4,.wk-title{text-transform:capitalize}
 <dialog id="planDlg"></dialog>
 <dialog id="retestDlg"></dialog>
 <dialog id="dupDlg"></dialog>
+<dialog id="acctDlg"></dialog>
 <dialog id="exDlg"></dialog>
 <dialog id="confirmDlg"></dialog>
 <nav class="bottomnav" id="bottomnav" aria-label="Sections"></nav>
@@ -3064,13 +3070,13 @@ function authHTML(msg, err){
   </div>`;
 }
 function showAuth(msg, err){
-     document.body.classList.add("signed-out");
-     let el = $("#auth"); if(!el){ el = document.createElement("div"); el.id = "auth"; document.body.appendChild(el); }
-     const keepE = ($("#authEmail")||{}).value || "", keepP = ($("#authPass")||{}).value || "";
-     el.innerHTML = authHTML(msg, err);
-     if($("#authEmail")) $("#authEmail").value = keepE; if($("#authPass")) $("#authPass").value = keepP;
-   }
-  async function authAction(kind){
+  document.body.classList.add("signed-out");
+  let el = $("#auth"); if(!el){ el = document.createElement("div"); el.id = "auth"; document.body.appendChild(el); }
+  const keepE = ($("#authEmail")||{}).value || "", keepP = ($("#authPass")||{}).value || "";
+  el.innerHTML = authHTML(msg, err);
+  if($("#authEmail")) $("#authEmail").value = keepE; if($("#authPass")) $("#authPass").value = keepP;
+}
+async function authAction(kind){
   const email = ($("#authEmail")||{}).value?.trim(), pass = ($("#authPass")||{}).value || "";
   if(!email) return showAuth("Enter your email.", true);
   try {
@@ -3116,14 +3122,55 @@ document.addEventListener("change", e => { if(e.target.id === "importFile"){ con
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-sb]"); if(!b) return;
   if(b.dataset.sb === "export") exportData();
-  if(b.dataset.sb === "import") $("#importFile").click();
+  if(b.dataset.sb === "import"){ const f = (b.closest("dialog") || document).querySelector("#importFile") || $("#importFile"); if(f) f.click(); }
+  if(b.dataset.sb === "account") openAccount();
+  if(b.dataset.sb === "acctsave") saveAccount();
   if(b.dataset.sb === "signout") SB.auth.signOut().then(() => location.reload());
 });
+const PERSON_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
+const fullName = () => (SESSION && SESSION.user && SESSION.user.user_metadata && SESSION.user.user_metadata.full_name) || "";
+function initials(n){ return n.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join(""); }
+function renderAcctBtn(){ const b = $("#acctBtn"); if(!b) return; const n = fullName(); b.innerHTML = n ? `<span class="acct-ini">${esc(initials(n))}</span>` : PERSON_SVG; b.title = n || (SESSION && SESSION.user ? SESSION.user.email : "Account"); }
+let acctMsg = null;
+function openAccount(){ acctMsg = null; renderAccount(); openDlg($("#acctDlg")); }
+function renderAccount(){
+  const u = (SESSION && SESSION.user) || {}, pending = u.new_email;
+  $("#acctDlg").innerHTML = `<div class="dlg-head"><h2>Profile</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><span class="acct-big">${fullName() ? esc(initials(fullName())) : PERSON_SVG}</span><div><b>${esc(fullName() || "Add your name")}</b><div class="small muted">${esc(u.email || "")}</div></div></div>
+    <label class="f">Full name<input class="i" id="acctName" autocomplete="name" value="${esc(fullName())}" placeholder="Cullen Scott"></label>
+    <label class="f">Email<span class="h">${pending ? `Waiting for you to confirm ${esc(pending)}` : "Changing it sends a confirmation link to the new address"}</span><input class="i" id="acctEmail" type="email" autocomplete="email" inputmode="email" value="${esc(u.email || "")}"></label>
+    <h3 style="margin-top:6px">Change password</h3>
+    <div class="fgrid"><label class="f">New password<input class="i" id="acctPass" type="password" autocomplete="new-password" placeholder="At least 6 characters"></label>
+    <label class="f">Confirm password<input class="i" id="acctPass2" type="password" autocomplete="new-password"></label></div>
+    <p class="small muted" style="margin-top:-4px">Leave the password boxes empty to keep your current password.</p>
+    ${acctMsg ? `<p class="small" style="color:${acctMsg.err?"var(--warn)":"var(--good)"};font-weight:600">${esc(acctMsg.t)}</p>` : ""}
+    <h3 style="margin-top:14px">Your data</h3>
+    <div class="actions"><button class="btn ghost sm" data-sb="export">Export my data</button><button class="btn ghost sm" data-sb="import">Import data</button></div>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </div>
+  <div class="dlg-foot"><button class="btn danger sm" data-sb="signout" style="margin-right:auto">Sign out</button><button class="btn" data-sb="acctsave" id="acctSave">Save</button></div>`;
+}
+async function saveAccount(){
+  const name = ($("#acctName")||{}).value.trim(), email = ($("#acctEmail")||{}).value.trim(), p1 = ($("#acctPass")||{}).value, p2 = ($("#acctPass2")||{}).value;
+  const u = SESSION.user, done = [];
+  if(p1 || p2){ if(p1.length < 6){ acctMsg = {t:"Passwords need at least 6 characters.", err:true}; return renderAccount(); } if(p1 !== p2){ acctMsg = {t:"The two passwords don't match.", err:true}; return renderAccount(); } }
+  const btn = $("#acctSave"); if(btn){ btn.disabled = true; btn.textContent = "Saving…"; }
+  try {
+    if(name !== fullName()){ const { data, error } = await SB.auth.updateUser({ data: { full_name: name } }); if(error) throw error; if(data && data.user) SESSION.user = data.user; done.push("name"); }
+    if(p1){ const { error } = await SB.auth.updateUser({ password: p1 }); if(error) throw error; done.push("password"); }
+    if(email && email.toLowerCase() !== (u.email||"").toLowerCase()){
+      const { data, error } = await SB.auth.updateUser({ email }, { emailRedirectTo: location.origin + location.pathname }); if(error) throw error; if(data && data.user) SESSION.user = data.user;
+      acctMsg = {t:`Saved. To finish changing your email, click the confirmation link sent to ${email}${done.length ? "" : ""}. Until then, keep signing in with ${u.email}.`};
+    } else acctMsg = done.length ? {t:`Saved your ${done.join(" and ")}.`} : {t:"Nothing to change."};
+  } catch(e){ acctMsg = {t: e.message || String(e), err:true}; }
+  renderAcctBtn(); renderAccount();
+}
 function accountPanelHTML(){
   return `<div class="panel" style="margin-top:20px">
     <h3>Account</h3>
-    <p class="small muted">Signed in as <b style="color:var(--ink)">${esc(SESSION && SESSION.user ? SESSION.user.email : "")}</b>. Your log is private to this account.</p>
-    <div class="actions"><button class="btn ghost sm" data-sb="export">Export my data</button><button class="btn ghost sm" data-sb="import">Import data</button><button class="btn danger sm" data-sb="signout">Sign out</button></div>
+    <p class="small muted">Signed in as <b style="color:var(--ink)">${esc(fullName() ? fullName() + " · " : "")}${esc(SESSION && SESSION.user ? SESSION.user.email : "")}</b>. Your log is private to this account.</p>
+    <div class="actions"><button class="btn sm" data-sb="account">Edit profile</button><button class="btn ghost sm" data-sb="export">Export my data</button><button class="btn ghost sm" data-sb="import">Import data</button><button class="btn danger sm" data-sb="signout">Sign out</button></div>
     <input type="file" id="importFile" accept="application/json,.json" hidden>
   </div>`;
 }
@@ -3133,6 +3180,7 @@ function startApp(){
   if(appStarted) return; appStarted = true;
   document.body.classList.remove("signed-out"); const a = $("#auth"); if(a) a.remove();
   LS_KEY = "split-tracker-v1:" + SESSION.user.id;
+  renderAcctBtn();
   installClaudeShim();
   loadLocal();
   if(ensureMainStack() | ensureDefaultTools() | ensureToolLibrary() | ensurePinnedTools() | ensureProgramStart()) saveLocal();
@@ -3146,7 +3194,7 @@ async function boot(){
   const { data } = await SB.auth.getSession();
   SESSION = data.session;
   SB.auth.onAuthStateChange((event, session) => {
-    SESSION = session;
+    SESSION = session; if(session) renderAcctBtn();
     if(session && !appStarted) startApp();
     if(event === "SIGNED_OUT") location.reload();
   });
