@@ -414,6 +414,7 @@ body.signed-out header.top, body.signed-out main, body.signed-out .bottomnav{dis
 .acct-ini{font-weight:700;font-size:13px;letter-spacing:.02em}
 .acct-big{width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
 .acct-big svg{width:26px;height:26px}
+.tpl-chips{margin-bottom:14px}
 .stack-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 /* Title Case for titles and names */
 h2,h3,h4,.wk-title{text-transform:capitalize}
@@ -747,7 +748,7 @@ function agenda(d){
   (day.plan||[]).filter(p => !p.done).forEach(p => items.push({kind:"plan", pk:p.kind, t:toMin(p.time), id:p.id, title: p.kind==="recovery" ? "Recovery" : p.kind==="meal" ? `${MEALS.find(x=>x[0]===p.meal)[1]}${p.note?` · ${p.note}`:""}` : (p.title || (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice" ? "Practice" : "Workout")), sub: p.kind==="recovery" ? `Planned · ${(p.tools||[]).map(t=>t.name).join(", ")||"Recovery"}` : p.kind!=="meal" && (p.exIds||[]).length ? `${p.dur ? p.dur+" min · " : ""}${p.exIds.length} ${p.kind==="practice"?"drills":"exercises"} planned` : p.kind==="meal" && (p.items||[]).length ? `Planned · ${r0(p.items.reduce((a,it)=>a+(+(it.n||{}).kcal||0),0))} kcal — ${p.items.map(it=>it.name).join(", ")}` : p.kind!=="meal" && p.dur ? `${p.dur} min planned` : "Planned", dur:+p.dur||0}));
   const pk = progDayFor(d);
   if(pk && !progDone(d, pk)){ const P = PROGRAM.days[pk], w = progWeek(d);
-    items.push({kind:"plan", pk:"workout", prog:pk, t: toMin(progConf().time), title:`Day ${P.n} · ${P.title}`, sub:`${P.kind==="lift"?"Lift":"Mobility / trunk · RPE 4–6"} · Week ${w}`, dur: P.kind==="lift"?75:40}); }
+    items.push({kind:"plan", pk:"workout", prog:pk, t: toMin(progConf().time), title:`OFS26-${P.n} · ${P.title}`, sub:`${P.kind==="lift"?"Lift":"Mobility / trunk · RPE 4–6"} · Week ${w}`, dur: P.kind==="lift"?75:40}); }
   return items.sort((a,b) => (a.t??9999) - (b.t??9999));
 }
 function timingInsights(d){
@@ -848,7 +849,7 @@ function planExResultsHTML(){
 }
 function planExHTML(){
   const word = pd.kind==="practice" ? "Drills" : "Exercises", chosen = pd.exIds.map(findEx).filter(Boolean);
-  return `<label class="f" style="margin-top:4px">${word}<span class="h">Plan what you'll do</span><input class="i" id="planExSearch" type="search" placeholder="Search ${word.toLowerCase()}…" value="${esc(pd.eq||"")}" autocomplete="off"></label>
+  return `${pd.kind!=="practice" ? `<h3 style="margin-top:4px">Templates</h3>${templateChipsHTML("plantemplate", pd.tpl)}` : ""}<label class="f" style="margin-top:4px">${word}<span class="h">Plan what you'll do</span><input class="i" id="planExSearch" type="search" placeholder="Search ${word.toLowerCase()}…" value="${esc(pd.eq||"")}" autocomplete="off"></label>
     <div class="results" id="planExResults" style="margin-top:-4px">${planExResultsHTML()}</div>
     ${chosen.length ? `<div class="plan-items">${chosen.map(e => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) auto 28px"><span class="nm">${esc(e.name)}</span><span class="small muted">${esc(secName(e.section))}</span><button class="x" data-act="planex" data-v="${esc(e.id)}" aria-label="Remove ${esc(e.name)}">×</button></div>`).join("")}</div>
       <p class="small muted" style="margin:6px 0 0">${chosen.length} ${word.toLowerCase()} planned. They'll be added when you start the session.</p>` : `<p class="small muted" style="margin:8px 0 0">No ${word.toLowerCase()} added yet.</p>`}`;
@@ -861,7 +862,31 @@ function planRecoveryHTML(){
     ${pd.tools.length ? `<div class="plan-items" style="margin-top:12px">${pd.tools.map((t,i) => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) 64px auto 28px"><span class="nm">${esc(t.name)}</span><input class="i" type="number" inputmode="decimal" min="0" step="any" data-pt="${i}" value="${esc(t.amt??"")}" aria-label="${esc(t.name)} amount"><span class="small muted">${t.unit==="session"?"sessions":t.unit}</span><button class="x" data-act="plantool" data-v="${t.id}" aria-label="Remove ${esc(t.name)}">×</button></div>`).join("")}</div>` : ""}
     <label class="f" style="margin-top:14px">Note<span class="h">optional</span><input class="i" data-pf="note" value="${esc(pd.note)}" placeholder="After the game" autocomplete="off"></label>`;
 }
+function openPlanView(id){
+  const p = (getDay(cur).plan||[]).find(x => x.id===id); if(!p) return;
+  if(p.kind==="workout" || p.kind==="practice"){
+    openWk(null, null, p, p.kind==="practice" ? "practice" : "training");
+    wd.recordMode = true; if(!wd.title) wd.title = (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice" ? "Practice" : "Workout");
+    renderWkDlg(); return;
+  }
+  openPlan(id); pd.view = "record"; renderPlanDlg();
+}
+function renderPlanRecord(){
+  const isMeal = pd.kind==="meal", title = isMeal ? MEALS.find(x=>x[0]===pd.meal)[1] : "Recovery";
+  const tools = pd.tools||[], items = pd.items||[];
+  const toolRows = tools.length ? `<div class="plan-items">${tools.map((t,i) => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) 72px auto"><span class="nm">${esc(t.name)}</span><input class="i" type="number" inputmode="decimal" min="0" step="any" data-pt="${i}" value="${esc(t.amt??"")}" aria-label="${esc(t.name)} amount"><span class="small muted">${t.unit==="session"?"sessions":t.unit}</span></div>`).join("")}</div>` : `<p class="empty-note">No tools planned. Tap Modify to add some.</p>`;
+  const body = isMeal ? (items.length ? planItemsHTML() : `<p class="empty-note">No foods planned. Tap Log meal to pick what you had, or Modify to plan foods.</p>`) : toolRows;
+  const btn = isMeal && !items.length ? `<button class="btn pl-yes" data-act="logplan">✓ Log meal</button>` : `<button class="btn pl-yes" data-act="plancomplete">✓ ${isMeal ? "Log meal" : "Complete"}</button>`;
+  $("#planDlg").innerHTML = `<div class="dlg-head"><h2>${esc(title)}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <p class="small muted" style="margin:-6px 0 12px">Planned · ${esc(fmtShort(pd.date||cur))} · ${esc(fmtTime(pd.time))}${pd.note?` · ${esc(pd.note)}`:""}</p>
+    ${body}
+    ${(isMeal ? items.length : tools.length) ? `<p class="small muted" style="margin-top:10px">Change the amounts to what you actually ${isMeal?"had":"did"}, then tap ${isMeal?"Log meal":"Complete"}.</p>` : ""}
+  </div>
+  <div class="dlg-foot"><button class="btn ghost sm" data-act="planmodify" style="margin-right:auto">Modify</button>${btn}</div>`;
+}
 function renderPlanDlg(){
+  if(pd && pd.view === "record") return renderPlanRecord();
   $("#planDlg").innerHTML = `<div class="dlg-head"><h2>${pd.editing?"Planned "+(pd.kind==="meal"?"Meal":pd.kind==="practice"?"Practice":pd.kind==="recovery"?"Recovery":"Workout"):"Plan Ahead"}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
   <div class="dlg-body">
     ${pd.editing?"":`<div class="subtabs" role="tablist"><button role="tab" aria-selected="${pd.kind==="meal"}" data-act="plankind" data-v="meal">Meal</button><button role="tab" aria-selected="${pd.kind==="workout"}" data-act="plankind" data-v="workout">Workout</button><button role="tab" aria-selected="${pd.kind==="practice"}" data-act="plankind" data-v="practice">Practice</button><button role="tab" aria-selected="${pd.kind==="recovery"}" data-act="plankind" data-v="recovery">Recovery</button></div>`}
@@ -877,7 +902,7 @@ function renderPlanDlg(){
       <div class="fgrid">
         <label class="f">Date<input class="i" type="date" data-pf="date" value="${esc(pd.date||cur)}"></label>
         <label class="f">Start<input class="i" type="time" data-pf="time" value="${esc(pd.time)}"></label>
-        <label class="f">Duration<span class="h">minutes</span><input class="i" type="number" inputmode="numeric" min="0" data-pf="dur" value="${esc(pd.dur)}"></label></div>${planExHTML()}`}
+        <label class="f">Duration (min)<input class="i" type="number" inputmode="numeric" min="0" data-pf="dur" value="${esc(pd.dur)}"></label></div>${planExHTML()}`}
   </div>
   <div class="dlg-foot" style="flex-wrap:wrap">${pd.editing?`<button class="btn danger sm" data-act="delplan">Delete</button><button class="btn ghost sm" data-act="plandup">Duplicate</button><button class="btn sm pl-yes" data-act="plancomplete" style="margin-right:auto">✓ Complete</button><button class="btn ghost sm" data-act="saveplan">Save</button><button class="btn sm" data-act="logplan">${pd.kind==="meal"?"Log this meal":pd.kind==="practice"?"Start practice":pd.kind==="recovery"?"Log recovery":"Start session"}</button>`
     :`<button class="btn ghost" data-act="closedlg">Cancel</button><button class="btn" data-act="saveplan">Add to calendar</button>`}</div>`;
@@ -927,7 +952,7 @@ function renderToday(){
     <div>
       <div class="panel section" style="margin-bottom:20px">
         <div class="sec-head"><h2>Training</h2><button class="btn sm" data-act="addwk">Log session</button></div>
-        ${(() => { const k = progDayFor(cur); return k && !progDone(cur,k) ? `<div class="prog-today" style="margin:0 0 12px"><span><b>Program:</b> Day ${PROGRAM.days[k].n} · ${PROGRAM.days[k].title} · Week ${progWeek(cur)}</span><button class="btn sm" data-act="startprog" data-v="${k}">Start</button></div>` : ""; })()}
+        ${(() => { const k = progDayFor(cur); return k && !progDone(cur,k) ? `<div class="prog-today" style="margin:0 0 12px"><span><b>Program:</b> OFS26-${PROGRAM.days[k].n} · ${PROGRAM.days[k].title} · Week ${progWeek(cur)}</span><button class="btn sm" data-act="startprog" data-v="${k}">Start</button></div>` : ""; })()}
         ${wks.length ? `<div class="stat-row" style="margin-bottom:10px">
           <div class="stat"><div class="v">${wks.reduce((s,w)=>s+(+w.dur||0),0)}<small>min</small></div><div class="l">${wks.length} session${wks.length>1?"s":""}</div></div>
           <div class="stat"><div class="v">${r0(dayLoad(cur))}</div><div class="l">Load (min × RPE)</div></div>
@@ -1130,7 +1155,7 @@ function renderFood(){
 }
 
 /* ---------- Session builder: sections, exercise library, videos ---------- */
-const SECTIONS = [["upper","Upper Body"],["lower","Lower Body"],["core","Core"],["speed","Speed"],["agility","Agility"],["cardio","Cardio"],["arm","Arm Care"]];
+const SECTIONS = [["ofs","Baseball Strong"],["upper","Upper Body"],["lower","Lower Body"],["core","Core"],["speed","Speed"],["agility","Agility"],["cardio","Cardio"],["arm","Arm Care"]];
 // measure: load = reps + weight, reps = reps only, time = seconds, dist = distance + time, cardio = minutes + distance
 const LIB_RAW = {
  upper:[
@@ -1235,7 +1260,7 @@ const LIB_RAW = {
  ]
 };
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const LIBRARY = Object.fromEntries(SECTIONS.map(([k]) => [k, LIB_RAW[k].map(([name,measure,cue]) => ({id:`${k}-${slug(name)}`, section:k, name, measure, cue}))]));
+const LIBRARY = Object.fromEntries(SECTIONS.map(([k]) => [k, (LIB_RAW[k]||[]).map(([name,measure,cue]) => ({id:`${k}-${slug(name)}`, section:k, name, measure, cue}))]));
 /* ---------- Practice: baseball skills + S2 cognitive drills ---------- */
 const GROUPS = {};
 const PITCH_SUBS = [["pitchLower","Lower Half"],["pitchSeq","Sequencing"],["pitchArm","Arm Action"],["pitchPen","Bullpen & Command"]];
@@ -1379,6 +1404,7 @@ const PTYPES = ["Practice","Bullpen","Batting Practice","Live At-Bats","Defense"
 
 
 function libFor(sec){ const own = (state.profile.customEx||[]).filter(e => e.section===sec);
+  if(sec==="ofs") return [...ofsLibrary(), ...own];
   if(GROUPS[sec]) return [...GROUPS[sec].subs.flatMap(([k]) => libFor(k)), ...own]; return [...(LIBRARY[sec]||[]), ...own]; }
 function libListHTML(sec, opts={}){ const g = groupOf(sec); if(!g) return libFor(sec).map(e => libRowHTML(e, opts)).join("");
   const G = GROUPS[g], subs = sec===g ? G.subs : G.subs.filter(x => x[0]===sec);
@@ -1668,11 +1694,12 @@ function nextMonday(){ const t = parse(todayStr()), add = (8 - t.getDay()) % 7; 
 function ensureProgramStart(){ const P = state.profile.program || {}; if(P.start && P.v5) return false; state.profile.program = {...P, start: P.start || nextMonday(), v5:true}; return true; }
 function progWeek(d){ const diff = Math.floor((parse(d) - parse(progConf().start)) / 86400000); return diff < 0 ? 0 : Math.floor(diff/7) + 1; }
 function progPhase(){ return null; }
-function progDayFor(d){ const c = progConf(); if(!c.active || progWeek(d) < 1) return null; const i = SCHEDULES[c.sched].indexOf(parse(d).getDay()); return i < 0 ? null : "d" + (i+1); }
+const PROGRAM_OFF = true; // program schedule removed; OFS26 templates and exercises remain
+function progDayFor(d){ if(PROGRAM_OFF) return null; const c = progConf(); if(!c.active || progWeek(d) < 1) return null; const i = SCHEDULES[c.sched].indexOf(parse(d).getDay()); return i < 0 ? null : "d" + (i+1); }
 function progDone(d, dk){ return getDay(d).workouts.some(w => w.program && w.program.day === dk); }
-const dayLabel = dk => { const d = PROGRAM.days[dk]; if(!d) return "Program"; const dow = SCHEDULES[progConf().sched][d.n-1]; return `Day ${d.n} · ${new Date(2024,0,7+dow).toLocaleDateString(undefined,{weekday:"short"})}`; };
+const dayLabel = dk => { const d = PROGRAM.days[dk]; if(!d) return "Program"; const dow = SCHEDULES[progConf().sched][d.n-1]; return `OFS26-${d.n} · ${new Date(2024,0,7+dow).toLocaleDateString(undefined,{weekday:"short"})}`; };
 const progLink = url => `<a class="watch" href="${esc(url)}" target="_blank" rel="noopener">Watch ↗</a>`;
-PROGRAM.days && Object.values(PROGRAM.days).forEach(d => { d.label = `Day ${d.n}`; });
+PROGRAM.days && Object.values(PROGRAM.days).forEach(d => { d.label = `OFS26-${d.n}`; });
 
 /* Speed jump rope: best and average from a session */
 function ropeStats(w){ const e = (w.exercises||[]).find(x => x.measure==="rope"); if(!e) return null; const v = (e.sets||[]).map(s => +s.reps).filter(x => x > 0); if(!v.length) return null; return {best: Math.max(...v), avg: v.reduce((a,b)=>a+b,0)/v.length, sets:v}; }
@@ -1725,10 +1752,10 @@ function programPanelHTML(){
       ${d.kind==="mob"?`<p class="small prog-note">${MOB_NOTE}</p>`:""}
       <div class="lib-list" style="max-height:none">${list.map(e => `<div class="lib-row">${thumbHTML(e)}
         <div class="lib-nm"><b>${esc(e.name)}</b><small>${e.sets>1?`${e.sets} × `:""}${esc(e.reps)}${e.cue?` · ${esc(e.cue)}`:""}</small></div>${progLink(e.url)}</div>`).join("")}</div>
-      <button class="btn" style="margin-top:12px" data-act="startprog" data-v="${progTab}">Start Day ${d.n}</button>`;
+      <button class="btn" style="margin-top:12px" data-act="startprog" data-v="${progTab}">Start OFS26-${d.n}</button>`;
   } else if(progTab === "rope"){
     const h = ropeHistory(10);
-    body = `<p class="small muted" style="margin:0 0 8px">Speed jump rope, 4 × 20 s on Days 1, 3 and 5. Best and average come from the clean reps you log.</p>
+    body = `<p class="small muted" style="margin:0 0 8px">Speed jump rope, 4 × 20 s on OFS26-1, OFS26-3 and OFS26-5. Best and average come from the clean reps you log.</p>
       ${h.length ? `<div class="table-wrap"><table class="ntable"><thead><tr><td><b>Date</b></td><td><b>Sets</b></td><td><b>Best</b></td><td><b>Avg</b></td></tr></thead><tbody>${h.map(x=>`<tr><td>${fmtShort(x.d)}</td><td>${x.sets.join(" · ")}</td><td><b>${x.best}</b></td><td>${r1(x.avg)}</td></tr>`).join("")}</tbody></table></div>`
         : `<p class="empty-note">No jump rope sets logged yet. They'll appear here after Day 1, 3 or 5.</p>`}`;
   } else if(progTab === "retest"){
@@ -1741,8 +1768,8 @@ function programPanelHTML(){
     <div class="pweeks5">${days.map(k => { const dd = PROGRAM.days[k]; const dow = SCHEDULES[c.sched][dd.n-1]; const date = addDays(cur, dow - parse(cur).getDay()); const done = progDone(date, k);
       return `<button class="${dd.kind} ${progTab===k?"sel":""} ${done?"done":""}" data-act="progtab" data-v="${k}"><b>${new Date(2024,0,7+dow).toLocaleDateString(undefined,{weekday:"short"})}</b><span>${dd.kind==="lift"?"Lift":"Mobility"}</span>${done?"<i>✓</i>":""}</button>`; }).join("")}</div>
     <p class="small" style="margin:8px 0 0;color:${rs.c}">${rs.t}</p>
-    ${todayKey && !progDone(cur, todayKey) ? `<div class="prog-today"><span><b>${cur===todayStr()?"Today":"This day"}:</b> Day ${PROGRAM.days[todayKey].n} · ${PROGRAM.days[todayKey].title}</span><button class="btn sm" data-act="startprog" data-v="${todayKey}">Start</button></div>` : ""}
-    <div class="subtabs" role="tablist" style="margin-top:14px">${[...days.map(k=>[k,`Day ${PROGRAM.days[k].n}`]),["rope","Jump Rope"],["retest","Re-Test"],["notes","Coaching"]].map(([k,l]) => `<button role="tab" aria-selected="${progTab===k}" data-act="progtab" data-v="${k}">${l}</button>`).join("")}</div>
+    ${todayKey && !progDone(cur, todayKey) ? `<div class="prog-today"><span><b>${cur===todayStr()?"Today":"This day"}:</b> OFS26-${PROGRAM.days[todayKey].n} · ${PROGRAM.days[todayKey].title}</span><button class="btn sm" data-act="startprog" data-v="${todayKey}">Start</button></div>` : ""}
+    <div class="subtabs" role="tablist" style="margin-top:14px">${[...days.map(k=>[k,`OFS26-${PROGRAM.days[k].n}`]),["rope","Jump Rope"],["retest","Re-Test"],["notes","Coaching"]].map(([k,l]) => `<button role="tab" aria-selected="${progTab===k}" data-act="progtab" data-v="${k}">${l}</button>`).join("")}</div>
     ${body}
     <div class="fgrid" style="margin-top:16px">
       <label class="f">Week 1 starts<input class="i" type="date" data-prog="start" value="${esc(c.start)}"></label>
@@ -1752,9 +1779,30 @@ function programPanelHTML(){
     <label style="display:flex;gap:8px;align-items:center;font-size:14px"><input type="checkbox" data-prog="active" ${c.active?"checked":""}> Show program days on the calendar</label>
     <p class="small muted" style="margin-top:12px;text-align:center;letter-spacing:.02em">${PROGRAM.brand} · ${PROGRAM.motto}</p>`;
 }
+/* Baseball Strong exercises one by one, and OFS26 day templates */
+function ofsLibrary(){
+  const map = new Map();
+  PROGRAM_EX.forEach(e => { const d = PROGRAM.days[e.day], tag = `OFS26-${d.n} ${e.sets>1?e.sets+" × ":""}${e.reps}`;
+    if(map.has(e.id)) map.get(e.id).days.push(tag); else map.set(e.id, {...e, section:"ofs", days:[tag]}); });
+  return [...map.values()].map(e => ({...e, cue: e.days.join(" · ") + (e.cue ? " — " + e.cue : "")}));
+}
+const OFS_KEYS = () => Object.keys(PROGRAM.days);
+function templateExercises(dk){
+  return PROGRAM_EX.filter(e => e.day===dk).map(e => { const f = measureFields(e.measure), blank = Object.fromEntries(f.map(([k]) => [k,""]));
+    return {exId:e.id, name:e.name, section:"ofs", measure:e.measure, target: e.sets>1 ? `${e.sets} × ${e.reps}` : e.reps, url:e.url, sets: e.measure==="pitchlog"||e.measure==="swinglog" ? [] : Array.from({length:e.sets}, () => ({...blank}))}; });
+}
+function applyTemplate(dk){
+  const d = PROGRAM.days[dk], w = progWeek(wd.date || cur);
+  wd.exercises = templateExercises(dk); wd.title = `OFS26-${d.n} · ${d.title}`; wd.type = d.kind==="lift" ? "Strength" : "Mobility";
+  wd.dur = d.kind==="lift" ? 75 : 40; wd.rpe = d.kind==="lift" ? 7 : 5; wd.program = {day:dk, week: w>=1 ? w : null};
+  if(!wd.sections.includes("ofs")) wd.sections.push("ofs"); wd.libTab = "ofs";
+}
+function templateChipsHTML(act, activeKey){
+  return `<div class="chips tpl-chips">${OFS_KEYS().map(k => { const d = PROGRAM.days[k]; return `<button class="chip" aria-pressed="${activeKey===k}" data-act="${act}" data-v="${k}" title="${esc(d.title)}">OFS26-${d.n}</button>`; }).join("")}</div>`;
+}
 function openProgramSession(dk){
   const d = PROGRAM.days[dk], c = progConf(), w = progWeek(cur);
-  wd = {id:null, type: d.kind==="lift" ? "Strength" : "Mobility", title:`Day ${d.n} · ${d.title}`, dur: d.kind==="lift" ? 75 : 40, rpe: d.kind==="lift" ? 7 : 5, kcal:"", dist:"", notes:"", sections:[],
+  wd = {id:null, type: d.kind==="lift" ? "Strength" : "Mobility", title:`OFS26-${d.n} · ${d.title}`, dur: d.kind==="lift" ? 75 : 40, rpe: d.kind==="lift" ? 7 : 5, kcal:"", dist:"", notes:"", sections:[],
     time: cur===todayStr() ? nowHM() : c.time, program:{day:dk, week: w>=1 ? w : null}, warmup:[], editing:false, libTab:null,
     exercises: PROGRAM_EX.filter(e => e.day===dk).map(e => { const f = measureFields(e.measure), blank = Object.fromEntries(f.map(([k]) => [k,""]));
       return {exId:e.id, name:e.name, section:"program", measure:e.measure, target: e.sets>1 ? `${e.sets} × ${e.reps}` : e.reps, url:e.url, sets: Array.from({length:e.sets}, () => ({...blank}))}; })};
@@ -1798,7 +1846,7 @@ function s2PanelHTML(){
 let pLibSec = "hitting";
 function sessionCardHTML(w){
   const U = state.profile.units, vol = strengthVolume(w);
-  return `<div class="wk"><div class="wk-head"><div>${w.program ? `<span class="tag" style="background:var(--ink);color:var(--bg)">${PROGRAM.days[w.program.day]?`Day ${PROGRAM.days[w.program.day].n}`:"Program"}${w.program.week?` · Wk ${w.program.week}`:""}</span> ` : ""}${(w.sections||[]).length ? w.sections.map(k=>`<span class="tag">${esc(secName(k))}</span>`).join(" ") : `<span class="tag">${esc(w.type)}</span>`}<div class="wk-title" style="margin-top:6px">${esc(w.title||w.type)}</div></div>
+  return `<div class="wk"><div class="wk-head"><div>${w.program ? `<span class="tag" style="background:var(--ink);color:var(--bg)">${PROGRAM.days[w.program.day]?`OFS26-${PROGRAM.days[w.program.day].n}`:"Program"}${w.program.week?` · Wk ${w.program.week}`:""}</span> ` : ""}${(w.sections||[]).length ? w.sections.map(k=>`<span class="tag">${esc(secName(k))}</span>`).join(" ") : `<span class="tag">${esc(w.type)}</span>`}<div class="wk-title" style="margin-top:6px">${esc(w.title||w.type)}</div></div>
       <div class="actions"><button class="btn ghost sm" data-act="dupopen" data-t="session" data-id="${w.id}">Duplicate</button><button class="btn ghost sm" data-act="editwk" data-id="${w.id}">Edit</button><button class="x" data-act="delwk" data-id="${w.id}" aria-label="Delete session">×</button></div></div>
     <div class="wk-meta">${w.time?`<span><b>${esc(fmtTime(w.time))}</b></span>`:""}<span><b>${r0(w.dur)}</b> min</span>${w.cat==="practice" ? (w.quality ? `<span>Quality <b>${w.quality}</b> ${QUALITY_WORDS[w.quality]||""}</span>` : "") : `<span>RPE <b>${w.rpe}</b> ${RPE_WORDS[w.rpe]||""}</span>`}<span>Load <b>${r0(w.dur*w.rpe)}</b></span>
     ${num(w.dist)&&+w.dist?`<span><b>${r1(w.dist)}</b> ${U==="kg"?"km":"mi"}</span>`:""}${+w.kcal?`<span><b>${r0(w.kcal)}</b> kcal</span>`:""}${vol&&w.cat!=="practice"?`<span>Volume <b>${r0(vol).toLocaleString()}</b> ${wU()}</span>`:""}</div>
@@ -1866,7 +1914,7 @@ function plannedHTML(kind){
   const items = plannedItems(kind); if(!items.length) return "";
   const rows = items.map(it => {
     if(it.prog){ const P = PROGRAM.days[it.prog], w = progWeek(cur);
-      return `<div class="planned-row"><div><span class="tag" style="background:var(--ink);color:var(--bg)">Program · Week ${w}</span><b>Day ${P.n} · ${esc(P.title)}</b><small>${esc(fmtTime(progConf().time))} · ${P.kind==="lift"?"Lift · 75 min":"Mobility · 40 min"}</small></div>
+      return `<div class="planned-row"><div><span class="tag" style="background:var(--ink);color:var(--bg)">Program · Week ${w}</span><b>OFS26-${P.n} · ${esc(P.title)}</b><small>${esc(fmtTime(progConf().time))} · ${P.kind==="lift"?"Lift · 75 min":"Mobility · 40 min"}</small></div>
         <div class="actions"><button class="btn ghost sm" data-act="dupopen" data-t="prog" data-id="${it.prog}">Duplicate</button><button class="btn ghost sm" data-act="startprog" data-v="${it.prog}">Open</button><button class="btn sm pl-yes" data-act="completeprog" data-v="${it.prog}">✓ Complete</button></div></div>`; }
     const p = it.plan, title = p.kind==="recovery" ? "Recovery" : (p.title || (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice" ? "Practice" : "Workout"));
     const sub = p.kind==="recovery" ? ((p.tools||[]).map(t => `${t.name}${num(t.amt)&&+t.amt?` ${t.amt} ${t.unit}`:""}`).join(", ") || "No tools picked") : `${p.dur ? p.dur+" min" : ""}${(p.exIds||[]).length ? ` · ${p.exIds.length} ${p.kind==="practice"?"drills":"exercises"}` : ""}`;
@@ -1895,16 +1943,16 @@ function completePlan(id){
 function completeProgram(dk){
   const d0 = PROGRAM.days[dk], c = progConf(), wk = progWeek(cur);
   const w = {id:uid(), cat:"training", type: d0.kind==="lift" ? "Strength" : "Mobility", time:c.time, program:{day:dk, week: wk>=1 ? wk : null}, warmup:[], sections:[],
-    title:`Day ${d0.n} · ${d0.title}`, dur: d0.kind==="lift" ? 75 : 40, rpe: d0.kind==="lift" ? 7 : 5, quality:null, kcal:0, dist:0, notes:"",
+    title:`OFS26-${d0.n} · ${d0.title}`, dur: d0.kind==="lift" ? 75 : 40, rpe: d0.kind==="lift" ? 7 : 5, quality:null, kcal:0, dist:0, notes:"",
     exercises: PROGRAM_EX.filter(e => e.day===dk).map(e => ({exId:e.id, name:e.name, section:"program", measure:e.measure, target: e.sets>1 ? `${e.sets} × ${e.reps}` : e.reps, url:e.url, sets:[]}))};
   editDay(cur, d => d.workouts.push(w));
-  toast(`Day ${d0.n} marked complete`);
+  toast(`OFS26-${d0.n} marked complete`);
 }
 /* ---------- Duplicate sessions, plans and recovery to another day ---------- */
 let dup = null;
 function dupLabel(){
   if(dup.t==="session"){ const w = getDay(cur).workouts.find(x => x.id===dup.id); return w ? (w.title || w.type) : "Session"; }
-  if(dup.t==="prog"){ const P = PROGRAM.days[dup.id]; return P ? `Day ${P.n} · ${P.title}` : "Program day"; }
+  if(dup.t==="prog"){ const P = PROGRAM.days[dup.id]; return P ? `OFS26-${P.n} · ${P.title}` : "Program day"; }
   if(dup.t==="plan"){ const p = (getDay(cur).plan||[]).find(x => x.id===dup.id); return p ? (p.kind==="recovery" ? "Recovery" : p.title || (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice"?"Practice":"Workout")) : "Plan"; }
   return `Recovery · ${toolSummary(cur).join(", ")}`;
 }
@@ -1934,10 +1982,10 @@ function saveDup(){
     msg = w.title || w.type;
   } else if(dup.t==="prog"){
     const P = PROGRAM.days[dup.id], ids = PROGRAM_EX.filter(e => e.day===dup.id).map(e => e.id);
-    const p = {id:uid(), kind:"workout", time:progConf().time, done:false, title:`Day ${P.n} · ${P.title}`, sections:[], dur: P.kind==="lift" ? 75 : 40, exIds:ids};
+    const p = {id:uid(), kind:"workout", time:progConf().time, done:false, title:`OFS26-${P.n} · ${P.title}`, sections:[], dur: P.kind==="lift" ? 75 : 40, exIds:ids};
     if(asPlan) editDay(target, d => { d.plan = d.plan || []; d.plan.push(p); });
     else { const keep = cur; cur = target; completeProgram(dup.id); cur = keep; render(); }
-    msg = `Day ${P.n}`;
+    msg = `OFS26-${P.n}`;
   } else if(dup.t==="plan"){
     const p = (day0.plan||[]).find(x => x.id===dup.id); if(!p) return;
     const copy = {...JSON.parse(JSON.stringify(p)), id:uid(), done:false};
@@ -1960,7 +2008,7 @@ function renderTraining(){
   const addMore = wl.length ? `<button class="btn ghost" style="width:100%;margin-bottom:10px" data-act="addwk">+ Add another session</button>` : "";
   const days = Array.from({length:7},(_,i)=>addDays(cur,i-6));
   return `
-  <div class="panel section" id="progPanel">${programPanelHTML()}</div>
+
   ${plannedHTML("training")}
   <div class="sec-head"><h2>Sessions</h2><button class="btn" data-act="addwk">Build session</button></div>
   <div class="grid2">
@@ -2684,18 +2732,20 @@ function renderWkDlg(){
     <button class="linkbtn" style="margin-top:8px" data-act="newexsession" data-v="${wd.libTab}">+ Add your own ${esc(secName(wd.libTab))} exercise</button>`
     : `<p class="small muted" style="margin:0">Pick one or more sections above to browse ${wd.cat==="practice"?"drills":"exercises"}.</p>`;
   const autoTitle = wd.sections.map(secName).join(" + ");
-  $("#wkDlg").innerHTML = `<div class="dlg-head"><h2>${wd.cat==="practice" ? (wd.editing?"Edit Practice":"Build Practice") : (wd.editing?"Edit Session":"Build Session")}</h2><div style="display:flex;align-items:center;gap:6px"><button class="btn sm pl-yes" data-act="savewk">${wd.editing ? "Save" : "✓ Complete"}</button><button class="x" data-act="closedlg" aria-label="Close">×</button></div></div>
+  $("#wkDlg").innerHTML = `<div class="dlg-head"><h2 ${wd.recordMode ? 'style="font-size:20px"' : ""}>${wd.recordMode ? esc(wd.title || wd.sections.map(secName).join(" + ") || (wd.cat==="practice" ? "Practice" : "Workout")) : wd.cat==="practice" ? (wd.editing?"Edit Practice":"Build Practice") : (wd.editing?"Edit Session":"Build Session")}</h2><div style="display:flex;align-items:center;gap:6px"><button class="btn sm pl-yes" data-act="savewk">${wd.editing ? "Save" : "✓ Complete"}</button><button class="x" data-act="closedlg" aria-label="Close">×</button></div></div>
   <div class="dlg-body">
     ${wd.program && PROGRAM.days[wd.program.day] ? (() => { const d = PROGRAM.days[wd.program.day]; return `<div class="prog-box"><b>${esc(PROGRAM.name)}${wd.program.week?` · Week ${wd.program.week}`:""}</b>
       <small>Focus: ${esc(d.focus)}</small>${d.kind==="mob"?`<small style="margin-top:6px;color:var(--ink)">${esc(MOB_NOTE)}</small>`:""}</div>`; })() : ""}
-    <h3>${wd.cat==="practice"?"What Are You Working On?":"What Are You Training?"}</h3>
-    <div class="chips sec-chips" style="margin-bottom:14px">${secsFor(wd.cat).map(([k,l]) => `<button class="chip" aria-pressed="${wd.sections.includes(k)}" data-act="wksec" data-v="${k}">${wd.sections.includes(k)?"✓":"+"} ${l}</button>`).join("")}</div>
+    ${wd.recordMode ? `<p class="small muted" style="margin:-6px 0 12px">Planned${(wd.sections||[]).length?" · "+esc(wd.sections.map(secName).join(" + ")):""}. Record what you did, then tap Complete.</p>` : ""}
+    ${!wd.recordMode && wd.cat!=="practice" ? `<h3>Templates</h3><p class="small muted" style="margin:-4px 0 6px">Load a full Baseball Strong day. You can add or remove exercises after.</p>${templateChipsHTML("wktemplate", wd.program && wd.program.day)}` : ""}
+    ${wd.recordMode ? "" : `    <h3>${wd.cat==="practice"?"What Are You Working On?":"What Are You Training?"}</h3>
+    <div class="chips sec-chips" style="margin-bottom:14px">${secsFor(wd.cat).map(([k,l]) => `<button class="chip" aria-pressed="${wd.sections.includes(k)}" data-act="wksec" data-v="${k}">${wd.sections.includes(k)?"✓":"+"} ${l}</button>`).join("")}</div>`}
     <div class="fgrid">
       ${wd.cat==="practice" ? `<label class="f">Date<input class="i" type="date" data-wk="date" value="${esc(wd.date||cur)}"></label>` : `<label class="f">Date<input class="i" type="date" data-wk="date" value="${esc(wd.date||cur)}"></label>`}
-      <label class="f">Type<select class="i" data-wk="type">${(wd.cat==="practice" ? PTYPES : ["Training",...TYPES]).map(t=>`<option ${wd.type===t?"selected":""}>${t}</option>`).join("")}</select></label>
+      ${wd.recordMode ? "" : `<label class="f">Type<select class="i" data-wk="type">${(wd.cat==="practice" ? PTYPES : ["Training",...TYPES]).map(t=>`<option ${wd.type===t?"selected":""}>${t}</option>`).join("")}</select></label>`}
       <label class="f">Start<input class="i" type="time" data-wk="time" value="${esc(wd.time||"")}"></label>
-      <label class="f">Duration<span class="h">minutes</span><input class="i" type="number" min="0" inputmode="numeric" data-wk="dur" value="${esc(wd.dur)}"></label>
-      <label class="f">Calories burned<span class="h">optional</span><input class="i" type="number" min="0" inputmode="numeric" data-wk="kcal" value="${esc(wd.kcal)}"></label>
+      <label class="f">Duration (min)<input class="i" type="number" min="0" inputmode="numeric" data-wk="dur" value="${esc(wd.dur)}"></label>
+      ${wd.recordMode ? "" : `<label class="f">Calories burned<span class="h">optional</span><input class="i" type="number" min="0" inputmode="numeric" data-wk="kcal" value="${esc(wd.kcal)}"></label>`}
       ${endurance?`<label class="f">Distance<span class="h">${U==="kg"?"km":"mi"}</span><input class="i" type="number" min="0" step="0.1" inputmode="decimal" data-wk="dist" value="${esc(wd.dist)}"></label>`:""}
     </div>
     ${wd.cat==="practice" ? `<label class="f">Quality <span class="h" id="qualWord">${wd.quality ? `${wd.quality} · ${QUALITY_WORDS[wd.quality]}` : "How well did the work go?"}</span>
@@ -2703,13 +2753,13 @@ function renderWkDlg(){
       <div class="seg rpe" role="group">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button type="button" aria-pressed="${wd.rpe===n}" data-act="rpe" data-v="${n}">${n}</button>`).join("")}</div></label>`}
     <h3 style="margin-top:6px">Your Session <span class="muted nt" style="font-weight:500">${wd.exercises.length?`· ${wd.exercises.length} ${wd.cat==="practice"?"drill":"exercise"}${wd.exercises.length>1?"s":""}`:""}</span></h3>
     ${exHTML || `<p class="small muted">Add ${wd.cat==="practice"?"drills":"exercises"} from the list below.</p>`}
-    <button class="linkbtn" data-act="addex">+ Add ${wd.cat==="practice"?"a drill":"an exercise"} by name</button>
+    ${wd.recordMode ? "" : `<button class="linkbtn" data-act="addex">+ Add ${wd.cat==="practice"?"a drill":"an exercise"} by name</button>
 
     <h3 style="margin-top:18px">${wd.cat==="practice"?"Drill Library":"Exercises"}</h3>
-    ${libHTML}
+    ${libHTML}`}
     <label class="f" style="margin-top:16px">Notes<textarea class="i" data-wk="notes" placeholder="How it felt, splits, anything to remember">${esc(wd.notes)}</textarea></label>
   </div>
-  <div class="dlg-foot" style="flex-wrap:wrap">${wd.editing ? `<button class="btn danger sm" data-act="delwkdlg">Delete</button>` : ""}<button class="btn ghost sm" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button><button class="btn pl-yes" data-act="savewk">${wd.editing ? "✓ Save changes" : "✓ Complete"}</button></div>`;
+  <div class="dlg-foot" style="flex-wrap:wrap">${wd.recordMode ? `<button class="btn ghost sm" data-act="wkmodify" style="margin-right:auto">Modify</button>` : `${wd.editing ? `<button class="btn danger sm" data-act="delwkdlg">Delete</button>` : ""}<button class="btn ghost sm" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button>`}<button class="btn pl-yes" data-act="savewk">${wd.editing ? "✓ Save changes" : "✓ Complete"}</button></div>`;
 }
 function saveWk(){ if(!wd || wd._saved) return;
   try { saveWkInner(); wd._saved = true; } catch(err){ console.error(err); toast("Couldn't save: " + ((err && err.message) || err)); } }
@@ -2744,7 +2794,9 @@ document.addEventListener("click", e => {
     case "calview": calView = v; render(); break;
     case "calshift": cur = calView==="week" ? addDays(cur, 7*(+v)) : (() => { const d = parse(cur); const t = new Date(d.getFullYear(), d.getMonth()+(+v), 1); return ds(t); })(); render(); break;
     case "addplan": openPlan(null); break;
-    case "editplan": openPlan(b.dataset.id); break;
+    case "editplan": openPlanView(b.dataset.id); break;
+    case "wkmodify": { const id = wd && wd.planId; if(!id) break; wd._saved = true; closeDlg($("#wkDlg")); openPlan(id); break; }
+    case "planmodify": pd.view = "edit"; renderPlanDlg(); break;
     case "plankind": if(pd.kind !== v && v !== "meal"){ pd.sections = []; pd.exIds = []; } pd.kind = v; if(v!=="meal" && (!pd.time || Object.values(MEAL_TIME).includes(pd.time))) pd.time = "17:00"; if(v==="meal") pd.time = MEAL_TIME[pd.meal]; renderPlanDlg(); break;
     case "plansec": { const i = pd.sections.indexOf(v); if(i>=0) pd.sections.splice(i,1); else pd.sections.push(v); keepScroll("#planDlg", renderPlanDlg); break; }
     case "saveplan": try { savePlan(); } catch(err){ console.error(err); toast("Couldn't add to calendar: " + ((err && err.message) || err)); } break;
@@ -2762,6 +2814,8 @@ document.addEventListener("click", e => {
     case "plandup": { if(!pd || !pd.editing) break; const id = pd.id, target = pd.date || cur; savePlan(false); closeDlg($("#planDlg")); if(target !== cur){ cur = target; render(); } setTimeout(() => openDup("plan", id), 50); break; }
     case "completeplan": completePlan(b.dataset.id); break;
     case "completeprog": completeProgram(v); break;
+    case "wktemplate": { const had = wd.exercises.length; applyTemplate(v); keepScroll("#wkDlg", renderWkDlg); toast(`Loaded OFS26-${PROGRAM.days[v].n}${had ? " (replaced your exercises)" : ""}`); break; }
+    case "plantemplate": { const d = PROGRAM.days[v]; pd.tpl = v; pd.exIds = PROGRAM_EX.filter(e => e.day===v).map(e => e.id); pd.title = `OFS26-${d.n} · ${d.title}`; pd.dur = d.kind==="lift" ? 75 : 40; if(!pd.sections.includes("ofs")) pd.sections = ["ofs"]; keepScroll("#planDlg", renderPlanDlg); break; }
     case "dupopen": openDup(b.dataset.t, b.dataset.id); break;
     case "dupas": dup.as = v; document.querySelectorAll('#dupDlg [data-act="dupas"]').forEach(x => x.setAttribute("aria-pressed", x.dataset.v===v)); break;
     case "dupsave": try { saveDup(); } catch(err){ console.error(err); toast("Couldn't duplicate: " + ((err && err.message) || err)); } break;
