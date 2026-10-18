@@ -412,9 +412,26 @@ body.signed-out header.top, body.signed-out main, body.signed-out .bottomnav{dis
 .auth-card{width:min(400px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}
 .acct-btn{border-radius:50%;margin-left:6px;color:var(--ink)}
 .acct-ini{font-weight:700;font-size:13px;letter-spacing:.02em}
+.acct-btn.has-photo{padding:0;overflow:hidden;border-color:var(--line)}
+.acct-img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+button.acct-big{position:relative;border:0;cursor:pointer;padding:0;width:64px;height:64px}
+.acct-cam{position:absolute;right:-2px;bottom:-2px;width:22px;height:22px;border-radius:50%;background:var(--protein);color:#fff;font-weight:700;font-size:15px;line-height:22px;text-align:center;border:2px solid var(--surface)}
 .acct-big{width:52px;height:52px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
 .acct-big svg{width:26px;height:26px}
 .tpl-chips{margin-bottom:14px}
+.hero-actions{display:flex;justify-content:flex-end;align-items:flex-end}
+@media (max-width:760px){ main .hero{grid-template-columns:auto 1fr;align-items:end;gap:12px} .hero-actions .btn{height:40px} }
+.fgrid.row4{grid-template-columns:minmax(0,1.4fr) minmax(0,1.1fr) minmax(0,1.1fr) minmax(0,.8fr);gap:0 8px}
+.fgrid.row4 .i{padding:0 6px;font-size:15px}
+.fgrid.row4 label.f{display:flex;flex-direction:column;justify-content:flex-end}
+@media (max-width:760px){ .fgrid.row4{gap:0 5px} .fgrid.row4 label.f{font-size:12px} .fgrid.row4 .i{font-size:16px;padding:0 4px;letter-spacing:-.02em} .fgrid.row4 select.i{padding-right:16px;background-position:right 4px center} }
+.btn-blue{background:var(--protein);border-color:var(--protein);color:#fff}
+.view-list{border:1px solid var(--line);border-radius:10px}
+.view-ex{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-bottom:1px dashed var(--line)}
+.view-ex:last-child{border-bottom:0}
+.view-ex b{font-size:14px}
+.view-ex span{font-size:13px;color:var(--muted)}
+.tool-quick[aria-pressed="true"]{border-color:var(--recover);color:var(--recover);background:color-mix(in srgb,var(--recover) 12%,var(--surface))}
 .stack-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 /* Title Case for titles and names */
 h2,h3,h4,.wk-title{text-transform:capitalize}
@@ -798,7 +815,7 @@ function calendarPanelHTML(){
   const label = calView==="week" ? (() => { const s = addDays(cur,-base.getDay()), e = addDays(s,6); return `${parse(s).toLocaleDateString(undefined,{month:"short",day:"numeric"})} – ${parse(e).toLocaleDateString(undefined,{month:"short",day:"numeric"})}`; })() : base.toLocaleDateString(undefined,{month:"long",year:"numeric"});
   return `<div class="sec-head"><h2>Calendar</h2>
       <div class="actions"><div class="range"><button aria-pressed="${calView==="week"}" data-act="calview" data-v="week">Week</button><button aria-pressed="${calView==="month"}" data-act="calview" data-v="month">Month</button></div>
-      <button class="btn sm" data-act="addplan">Plan</button></div></div>
+      </div></div>
     <div class="cal-nav"><button class="iconbtn" data-act="calshift" data-v="-1" aria-label="Previous">‹</button><span>${label}</span><button class="iconbtn" data-act="calshift" data-v="1" aria-label="Next">›</button></div>
     ${grid}
     <div class="cal-legend"><span><i class="dm"></i>Meals</span><span><i class="dw"></i>Workouts</span><span><i class="dp"></i>Planned</span></div>
@@ -874,16 +891,16 @@ function openPlanView(id){
 function renderPlanRecord(){
   const isMeal = pd.kind==="meal", title = isMeal ? MEALS.find(x=>x[0]===pd.meal)[1] : "Recovery";
   const tools = pd.tools||[], items = pd.items||[];
-  const toolRows = tools.length ? `<div class="plan-items">${tools.map((t,i) => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) 72px auto"><span class="nm">${esc(t.name)}</span><input class="i" type="number" inputmode="decimal" min="0" step="any" data-pt="${i}" value="${esc(t.amt??"")}" aria-label="${esc(t.name)} amount"><span class="small muted">${t.unit==="session"?"sessions":t.unit}</span></div>`).join("")}</div>` : `<p class="empty-note">No tools planned. Tap Modify to add some.</p>`;
-  const body = isMeal ? (items.length ? planItemsHTML() : `<p class="empty-note">No foods planned. Tap Log meal to pick what you had, or Modify to plan foods.</p>`) : toolRows;
-  const btn = isMeal && !items.length ? `<button class="btn pl-yes" data-act="logplan">✓ Log meal</button>` : `<button class="btn pl-yes" data-act="plancomplete">✓ ${isMeal ? "Log meal" : "Complete"}</button>`;
+  const toolRows = tools.length ? `<div class="plan-items">${tools.map((t,i) => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) 72px auto"><span class="nm">${esc(t.name)}</span><input class="i" type="number" inputmode="decimal" min="0" step="any" data-pt="${i}" value="${esc(t.amt??"")}" aria-label="${esc(t.name)} amount"><span class="small muted">${t.unit==="session"?"sessions":t.unit}</span></div>`).join("")}</div>` : `<p class="empty-note">No tools planned. Tap Edit to add some.</p>`;
+  const body = isMeal ? (items.length ? planItemsHTML() : `<p class="empty-note">No foods planned. Tap Save to pick what you had, or Edit to plan foods.</p>`) : toolRows;
+  const btn = isMeal && !items.length ? `<button class="btn pl-yes" data-act="logplan">Save</button>` : `<button class="btn pl-yes" data-act="plancomplete">Save</button>`;
   $("#planDlg").innerHTML = `<div class="dlg-head"><h2>${esc(title)}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
   <div class="dlg-body">
-    <p class="small muted" style="margin:-6px 0 12px">Planned · ${esc(fmtShort(pd.date||cur))} · ${esc(fmtTime(pd.time))}${pd.note?` · ${esc(pd.note)}`:""}</p>
+    <p class="small muted" style="margin:0 0 12px">Planned · ${esc(fmtShort(pd.date||cur))} · ${esc(fmtTime(pd.time))}${pd.note?` · ${esc(pd.note)}`:""}</p>
     ${body}
-    ${(isMeal ? items.length : tools.length) ? `<p class="small muted" style="margin-top:10px">Change the amounts to what you actually ${isMeal?"had":"did"}, then tap ${isMeal?"Log meal":"Complete"}.</p>` : ""}
+    ${(isMeal ? items.length : tools.length) ? `<p class="small muted" style="margin-top:10px">Change the amounts to what you actually ${isMeal?"had":"did"}, then tap Save.</p>` : ""}
   </div>
-  <div class="dlg-foot"><button class="btn ghost sm" data-act="planmodify" style="margin-right:auto">Modify</button>${btn}</div>`;
+  <div class="dlg-foot"><button class="btn pl-yes" data-act="planmodify" style="margin-right:auto">Edit</button>${btn}</div>`;
 }
 function renderPlanDlg(){
   if(pd && pd.view === "record") return renderPlanRecord();
@@ -904,7 +921,7 @@ function renderPlanDlg(){
         <label class="f">Start<input class="i" type="time" data-pf="time" value="${esc(pd.time)}"></label>
         <label class="f">Duration (min)<input class="i" type="number" inputmode="numeric" min="0" data-pf="dur" value="${esc(pd.dur)}"></label></div>${planExHTML()}`}
   </div>
-  <div class="dlg-foot" style="flex-wrap:wrap">${pd.editing?`<button class="btn danger sm" data-act="delplan">Delete</button><button class="btn ghost sm" data-act="plandup">Duplicate</button><button class="btn sm pl-yes" data-act="plancomplete" style="margin-right:auto">✓ Complete</button><button class="btn ghost sm" data-act="saveplan">Save</button><button class="btn sm" data-act="logplan">${pd.kind==="meal"?"Log this meal":pd.kind==="practice"?"Start practice":pd.kind==="recovery"?"Log recovery":"Start session"}</button>`
+  <div class="dlg-foot" style="flex-wrap:wrap">${pd.editing?`<button class="btn pl-no" data-act="delplan">Delete</button><button class="btn btn-blue" data-act="plandup">Duplicate</button><button class="btn sm pl-yes" data-act="plancomplete" style="margin-right:auto">✓ Complete</button><button class="btn ghost sm" data-act="saveplan">Save</button><button class="btn sm" data-act="logplan">${pd.kind==="meal"?"Log this meal":pd.kind==="practice"?"Start practice":pd.kind==="recovery"?"Log recovery":"Start session"}</button>`
     :`<button class="btn ghost" data-act="closedlg">Cancel</button><button class="btn" data-act="saveplan">Add to calendar</button>`}</div>`;
 }
 function savePlan(close=true){
@@ -929,11 +946,7 @@ function renderToday(){
       <div class="bigdate"><div class="num">${d.getDate()}</div>
         <div class="wd">${d.toLocaleDateString(undefined,{weekday:"long"})}<span>${d.toLocaleDateString(undefined,{month:"long",year:"numeric"})}</span></div></div>
     </div>
-    <div class="ready ${rd?"":"empty"}">
-      <div class="score">${rd ? rd.score : "—"}</div>
-      <div class="lbl">${rd ? readyWord(rd.score) : "No check-in yet"}</div>
-      <div class="sub">${rd ? "Readiness from your morning check-in" : `<button class="linkbtn" data-act="tab" data-v="recovery">Log sleep and soreness</button> to see today's readiness`}</div>
-    </div>
+    <div class="hero-actions"><button class="btn" data-act="addplan">+ Plan</button></div>
   </section>
 
   <div class="panel section" id="calPanel">${calendarPanelHTML()}</div>
@@ -945,48 +958,31 @@ function renderToday(){
         <span class="rem" style="color:${remaining<0?"var(--warn)":"var(--ink)"}">${remaining>=0 ? r0(remaining)+" left" : r0(-remaining)+" over"}</span></div>
       ${lane("p","Protein",t.p,T.p,"g")}${lane("c","Carbs",t.c,T.c,"g")}${lane("f","Fat",t.f,T.f,"g")}${lane("g","Fiber",t.fib,T.fib,"g")}
       ${lane("w","Water",day.water||0,T.water,"ml")}
-      <div class="actions"><button class="btn ghost sm" data-act="water" data-v="250">+ 250 ml water</button><button class="btn ghost sm" data-act="water" data-v="500">+ 500 ml</button></div>
     </div>
-    ${suppPanel(true)}
     </div>
     <div>
-      <div class="panel section" style="margin-bottom:20px">
-        <div class="sec-head"><h2>Training</h2><button class="btn sm" data-act="addwk">Log session</button></div>
-        ${(() => { const k = progDayFor(cur); return k && !progDone(cur,k) ? `<div class="prog-today" style="margin:0 0 12px"><span><b>Program:</b> OFS26-${PROGRAM.days[k].n} · ${PROGRAM.days[k].title} · Week ${progWeek(cur)}</span><button class="btn sm" data-act="startprog" data-v="${k}">Start</button></div>` : ""; })()}
-        ${wks.length ? `<div class="stat-row" style="margin-bottom:10px">
-          <div class="stat"><div class="v">${wks.reduce((s,w)=>s+(+w.dur||0),0)}<small>min</small></div><div class="l">${wks.length} session${wks.length>1?"s":""}</div></div>
-          <div class="stat"><div class="v">${r0(dayLoad(cur))}</div><div class="l">Load (min × RPE)</div></div>
-          ${trainingKcal(day)?`<div class="stat"><div class="v">${r0(trainingKcal(day))}<small>kcal</small></div><div class="l">Burned</div></div>`:""}</div>
-          <div class="today-wks">${wks.map(w=>`<button class="today-wk" data-act="editwk" data-id="${w.id}"><b>${esc(w.title||w.type)}</b><span>${w.time?esc(fmtTime(w.time))+" · ":""}${r0(w.dur)} min${w.cat==="practice"?" · Practice":""}</span></button>`).join("")}</div>
-          <div class="actions" style="margin-top:8px"><button class="btn ghost sm" data-act="addwk">+ Training session</button><button class="btn ghost sm" data-act="addprac">+ Practice</button></div>`
-          : `<p class="empty-note">Rest day so far. Log a session when you train.</p>`}
-        <div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px" class="small">
-          7-day load <b>${r0(a.acute)}</b> vs typical week <b>${r0(a.chronic)}</b>
-          · <span class="zone" style="color:${z.c}">${z.t}</span></div>
-      </div>
-      <div class="panel">
-        <div class="sec-head"><h2>Recovery</h2><button class="btn ghost sm" data-act="tab" data-v="recovery">Open</button></div>
-        <div class="stat-row">
-          ${num(rec.whoopRec)?`<div class="stat"><div class="v" style="color:${whoopZone(+rec.whoopRec).c}">${r0(rec.whoopRec)}<small>%</small></div><div class="l">Whoop recovery</div></div>`:""}
-          ${num(rec.strain)?`<div class="stat"><div class="v">${r1(rec.strain)}</div><div class="l">Strain</div></div>`:""}
-          <div class="stat"><div class="v">${num(rec.sleep)?fmtHM(rec.sleep*60):"—"}</div><div class="l">Sleep${num(rec.sleepNeed)?` of ${fmtHM(rec.sleepNeed*60)} needed`:""}</div></div>
-          <div class="stat"><div class="v">${rec.soreness||"—"}<small>/5</small></div><div class="l">Soreness</div></div>
-          <div class="stat"><div class="v">${num(rec.hrv)?r0(rec.hrv):"—"}<small>ms</small></div><div class="l">HRV</div></div>
-          <div class="stat"><div class="v">${num(rec.rhr)?r0(rec.rhr):"—"}<small>bpm</small></div><div class="l">Resting HR</div></div>
-        </div>
-        ${(() => {
-          const done = getDay(cur).tools || {}, pins = state.profile.tools.filter(t => t.pinned);
-          const others = Object.entries(done).filter(([id]) => !pins.some(p => p.id===id)).map(([,x]) => `${x.name}${num(x.amt)&&+x.amt?` ${r1(x.amt)} ${x.unit==="session"?(+x.amt===1?"session":"sessions"):x.unit}`:""}`);
-          const tiles = pins.map(t => { const x = done[t.id], on = !!x;
-            return `<button class="tool-tile" aria-pressed="${on}" data-act="toggletool" data-id="${t.id}"><span class="dot">${CHECK}</span><span>${esc(t.name)}<br><small class="muted" style="font-weight:500">${on&&num(x.amt)?`${r1(x.amt)} ${t.unit==="session"?"session":t.unit} logged`:`${num(t.amt)?r1(t.amt)+" "+(t.unit==="session"?"session":t.unit):""}`}</small></span></button>`; }).join("");
-          return `<div style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
-            ${pins.length?`<div class="tool-grid" style="margin-top:0">${tiles}</div>`:""}
-            <p class="small" style="margin:${pins.length?"10px":"0"} 0 0">${others.length ? `<b>Also logged</b> <span class="muted">· ${esc(others.join(", "))}</span>` : `<span class="muted">Other recovery tools are on the</span> <button class="linkbtn" data-act="tab" data-v="recovery">Recovery tab</button>`}</p></div>`;
-        })()}
-      </div>
+      ${recoveryCardHTML()}
     </div>
   </div>
   <p class="status ${statusErr?"err":""}" id="status">${esc(statusMsg)}</p>`;
+}
+/* Today: Recovery card laid out like Fuel */
+function recoveryCardHTML(){
+  const rec = getDay(cur).recovery || {}, need = num(rec.sleepNeed) && +rec.sleepNeed ? +rec.sleepNeed : 8;
+  const sleepH = num(rec.sleep) ? +rec.sleep : 0, rd = readiness(cur), short = need - sleepH;
+  const done = getDay(cur).tools || {}, pins = state.profile.tools.filter(t => t.pinned && !/^compression therapy$/i.test(t.name)), nDone = Object.keys(done).length, toolGoal = Math.max(pins.length, 1);
+  const bar = (label, txt, pct, color) => `<div class="lane"><div class="lane-top"><b>${label}</b><span>${txt}</span></div><div class="track"><div class="fill" style="width:${clamp(pct,0,100)}%;background:${color}"></div></div></div>`;
+  const rem = rd ? `Readiness ${rd.score}` : sleepH ? (short > 0 ? `${fmtHM(short*60)} short` : "Sleep need met") : "No check-in";
+  return `<div class="panel" style="margin-bottom:20px">
+    <div class="sec-head"><h2>Recovery</h2><button class="btn sm" data-act="addtool">Add tool</button></div>
+    <div class="kcal-line"><span class="n">${sleepH ? fmtHM(sleepH*60) : "0:00"}</span><span class="of">of ${fmtHM(need*60)} sleep</span><span class="rem" style="color:${rd ? (rd.score>=60?"var(--good)":rd.score>=40?"var(--carbs)":"var(--warn)") : "var(--ink)"}">${rem}</span></div>
+    ${bar("Sleep", `${sleepH ? fmtHM(sleepH*60) : "0:00"} / ${fmtHM(need*60)} h`, sleepH/need*100, "var(--protein)")}
+    ${bar("Whoop recovery", `${num(rec.whoopRec) ? r0(rec.whoopRec) : 0} / 100 %`, +rec.whoopRec || 0, num(rec.whoopRec) ? whoopZone(+rec.whoopRec).c : "var(--recover)")}
+    ${bar("Energy", `${rec.energy || 0} / 5`, (rec.energy || 0)/5*100, "var(--carbs)")}
+    ${bar("Soreness", `${rec.soreness || 0} / 5`, (rec.soreness || 0)/5*100, "var(--fat)")}
+    ${bar("Recovery tools", `${nDone} / ${toolGoal} logged`, nDone/toolGoal*100, "var(--recover)")}
+    <div class="actions">${pins.map(t => `<button class="btn ghost sm tool-quick" aria-pressed="${!!done[t.id]}" data-act="toggletool" data-id="${t.id}">${done[t.id] ? "✓" : "+"} ${esc(t.name)}</button>`).join("")}</div>
+  </div>`;
 }
 function suggestMeal(){ const h = new Date().getHours(); return h < 10 ? "breakfast" : h < 15 ? "lunch" : h < 21 ? "dinner" : "snacks"; }
 
@@ -1539,7 +1535,7 @@ function saveNewEx(){
   else { if(isPracticeSec(e.section)) pLibSec = e.section; else libSec = e.section; render(); }
   toast(`Added ${e.name}`);
 }
-const PITCH_TYPES = [["FB","4-Seam"],["2S","2-Seam"],["CT","Cutter"],["SL","Slider"],["CB","Curve"],["CH","Change"],["SPL","Splitter"]];
+const PITCH_TYPES = [["FB","4-Seam"],["2S","2-Seam"],["CT","Cutter"],["SL","Slider"],["CB","Curve"],["CH","Change"],["SW","Sweeper"]];
 const hasVelo = p => p.velo !== null && p.velo !== undefined && p.velo !== "" && +p.velo > 0;
 function pitchStats(sets){ const by = {}; sets.forEach(s => { const b = by[s.type] || (by[s.type] = {n:0, ex:0, v:[]}); b.n++; if(s.exec) b.ex++; if(hasVelo(s)) b.v.push(+s.velo); }); return by; }
 const avg = a => a.reduce((x,y)=>x+y,0)/a.length;
@@ -1847,7 +1843,7 @@ let pLibSec = "hitting";
 function sessionCardHTML(w){
   const U = state.profile.units, vol = strengthVolume(w);
   return `<div class="wk"><div class="wk-head"><div>${w.program ? `<span class="tag" style="background:var(--ink);color:var(--bg)">${PROGRAM.days[w.program.day]?`OFS26-${PROGRAM.days[w.program.day].n}`:"Program"}${w.program.week?` · Wk ${w.program.week}`:""}</span> ` : ""}${(w.sections||[]).length ? w.sections.map(k=>`<span class="tag">${esc(secName(k))}</span>`).join(" ") : `<span class="tag">${esc(w.type)}</span>`}<div class="wk-title" style="margin-top:6px">${esc(w.title||w.type)}</div></div>
-      <div class="actions"><button class="btn ghost sm" data-act="dupopen" data-t="session" data-id="${w.id}">Duplicate</button><button class="btn ghost sm" data-act="editwk" data-id="${w.id}">Edit</button><button class="x" data-act="delwk" data-id="${w.id}" aria-label="Delete session">×</button></div></div>
+      <div class="actions"><button class="btn ghost sm" data-act="dupopen" data-t="session" data-id="${w.id}">Duplicate</button><button class="btn ghost sm" data-act="editwk" data-mode="edit" data-id="${w.id}">Edit</button><button class="x" data-act="delwk" data-id="${w.id}" aria-label="Delete session">×</button></div></div>
     <div class="wk-meta">${w.time?`<span><b>${esc(fmtTime(w.time))}</b></span>`:""}<span><b>${r0(w.dur)}</b> min</span>${w.cat==="practice" ? (w.quality ? `<span>Quality <b>${w.quality}</b> ${QUALITY_WORDS[w.quality]||""}</span>` : "") : `<span>RPE <b>${w.rpe}</b> ${RPE_WORDS[w.rpe]||""}</span>`}<span>Load <b>${r0(w.dur*w.rpe)}</b></span>
     ${num(w.dist)&&+w.dist?`<span><b>${r1(w.dist)}</b> ${U==="kg"?"km":"mi"}</span>`:""}${+w.kcal?`<span><b>${r0(w.kcal)}</b> kcal</span>`:""}${vol&&w.cat!=="practice"?`<span>Volume <b>${r0(vol).toLocaleString()}</b> ${wU()}</span>`:""}</div>
     ${(w.exercises||[]).length?`<ul class="ex-list">${w.exercises.map(e=>`<li>${esc(e.name||"Exercise")} <span>${e.measure==="swinglog" ? esc(swingSummaryText(e)) : e.measure==="pitchlog" ? esc(pitchSummaryText(e)) : (e.sets||[]).map(s=>fmtSet(s,e.measure)).join(", ")}${e.measure==="hits"||e.measure==="pitches"?hitRate(e):""}</span></li>`).join("")}</ul>`:""}
@@ -2406,7 +2402,7 @@ function calcPreview(){
 }
 
 function render(){
-  renderTabs();
+  renderTabs(); if(typeof renderAcctBtn === "function" && typeof SESSION !== "undefined" && SESSION) renderAcctBtn();
   const m = $("#main");
   m.innerHTML = tab==="today" ? renderToday() : tab==="food" ? renderFood() : tab==="training" ? renderTraining() : tab==="practice" ? renderPractice() : tab==="recovery" ? renderRecovery() : tab==="trends" ? renderTrends() : renderTargets();
 }
@@ -2713,9 +2709,29 @@ function openWk(id, sec, plan, cat){
   wd.warmup = wd.warmup || [];
   wd.sections = wd.sections || []; wd.exercises = (wd.exercises||[]).map(e => ({measure:"load", ...e}));
   wd.cat = wd.cat || "training"; wd.date = cur;
-  wd.libTab = wd.sections[0] || (wd.cat==="practice" ? (groupOf(pLibSec) || pLibSec || "hitting") : null); wd.editing = !!ex; renderWkDlg(); openDlg($("#wkDlg"));
+  wd.libTab = wd.sections[0] || (wd.cat==="practice" ? (groupOf(pLibSec) || pLibSec || "hitting") : null); wd.editing = !!ex; wd.viewMode = !!ex; renderWkDlg(); openDlg($("#wkDlg"));
+}
+/* Saved sessions open read-only; Edit switches to the editable sheet */
+function renderWkView(){
+  const meta = [fmtShort(wd.date || cur), wd.time ? fmtTime(wd.time) : "", `${r0(wd.dur)} min`, wd.type,
+    wd.cat==="practice" ? (wd.quality ? `Quality ${wd.quality} · ${QUALITY_WORDS[wd.quality]}` : "") : `RPE ${wd.rpe} · ${RPE_WORDS[wd.rpe]||""}`].filter(Boolean).join(" · ");
+  const has = s => Object.values(s||{}).some(v => num(v) && +v > 0);
+  const rows = (wd.exercises||[]).map(e => {
+    const detail = e.measure==="pitchlog" ? pitchSummaryText(e) : e.measure==="swinglog" ? swingSummaryText(e) : ((e.sets||[]).filter(has).map(s => fmtSet(s, e.measure)).join(", ") || "No sets recorded");
+    return `<div class="view-ex"><b>${esc(e.name||"Exercise")}</b><span>${esc(detail)}${e.measure==="hits"||e.measure==="pitches" ? hitRate(e) : ""}</span></div>`; }).join("");
+  const r = ropeStats(wd);
+  $("#wkDlg").innerHTML = `<div class="dlg-head"><h2 style="font-size:20px">${esc(wd.title || wd.type || "Session")}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <p class="small muted" style="margin:0 0 12px">${esc(meta)}</p>
+    ${(wd.sections||[]).length ? `<div class="chips" style="margin-bottom:12px">${wd.sections.map(k => `<span class="tag">${esc(secName(k))}</span>`).join(" ")}</div>` : ""}
+    ${rows ? `<div class="view-list">${rows}</div>` : `<p class="empty-note">No ${wd.cat==="practice"?"drills":"exercises"} recorded.</p>`}
+    ${r ? `<p class="small" style="margin:10px 0 0">Jump rope 20 s · Best <b>${r.best}</b> · Average <b>${r1(r.avg)}</b></p>` : ""}
+    ${wd.notes ? `<h3 style="margin-top:14px">Notes</h3><p class="small">${esc(wd.notes)}</p>` : ""}
+  </div>
+  <div class="dlg-foot"><button class="btn btn-blue" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button><button class="btn pl-yes" data-act="wkedit">Edit</button></div>`;
 }
 function renderWkDlg(){
+  if(wd.viewMode) return renderWkView();
   const U = state.profile.units, endurance = ["Run","Cycle","Swim","Row","Walk"].includes(wd.type);
   if(wd.cat!=="practice" && wd.libTab && !wd.sections.includes(wd.libTab)) wd.libTab = wd.sections[0] || null;
   const exHTML = wd.exercises.map((e,ei) => { const f = measureFields(e.measure), tr = (e.target||"").split("×")[1], ph = tr ? tr.trim() : "", cols = `34px repeat(${f.length}, minmax(0,1fr)) 30px`, lib = e.exId ? findEx(e.exId) : null;
@@ -2732,20 +2748,20 @@ function renderWkDlg(){
     <button class="linkbtn" style="margin-top:8px" data-act="newexsession" data-v="${wd.libTab}">+ Add your own ${esc(secName(wd.libTab))} exercise</button>`
     : `<p class="small muted" style="margin:0">Pick one or more sections above to browse ${wd.cat==="practice"?"drills":"exercises"}.</p>`;
   const autoTitle = wd.sections.map(secName).join(" + ");
-  $("#wkDlg").innerHTML = `<div class="dlg-head"><h2 ${wd.recordMode ? 'style="font-size:20px"' : ""}>${wd.recordMode ? esc(wd.title || wd.sections.map(secName).join(" + ") || (wd.cat==="practice" ? "Practice" : "Workout")) : wd.cat==="practice" ? (wd.editing?"Edit Practice":"Build Practice") : (wd.editing?"Edit Session":"Build Session")}</h2><div style="display:flex;align-items:center;gap:6px"><button class="btn sm pl-yes" data-act="savewk">${wd.editing ? "Save" : "✓ Complete"}</button><button class="x" data-act="closedlg" aria-label="Close">×</button></div></div>
+  $("#wkDlg").innerHTML = `<div class="dlg-head"><h2 ${wd.recordMode ? 'style="font-size:20px"' : ""}>${wd.recordMode ? esc(wd.title || wd.sections.map(secName).join(" + ") || (wd.cat==="practice" ? "Practice" : "Workout")) : wd.cat==="practice" ? (wd.editing?"Edit Practice":"Build Practice") : (wd.editing?"Edit Session":"Build Session")}</h2><div style="display:flex;align-items:center;gap:6px"><button class="x" data-act="closedlg" aria-label="Close">×</button></div></div>
   <div class="dlg-body">
     ${wd.program && PROGRAM.days[wd.program.day] ? (() => { const d = PROGRAM.days[wd.program.day]; return `<div class="prog-box"><b>${esc(PROGRAM.name)}${wd.program.week?` · Week ${wd.program.week}`:""}</b>
       <small>Focus: ${esc(d.focus)}</small>${d.kind==="mob"?`<small style="margin-top:6px;color:var(--ink)">${esc(MOB_NOTE)}</small>`:""}</div>`; })() : ""}
-    ${wd.recordMode ? `<p class="small muted" style="margin:-6px 0 12px">Planned${(wd.sections||[]).length?" · "+esc(wd.sections.map(secName).join(" + ")):""}. Record what you did, then tap Complete.</p>` : ""}
+    ${wd.recordMode ? `<p class="small muted" style="margin:0 0 12px">Planned${(wd.sections||[]).length?" · "+esc(wd.sections.map(secName).join(" + ")):""}. Record what you did, then tap Save.</p>` : ""}
     ${!wd.recordMode && wd.cat!=="practice" ? `<h3>Templates</h3><p class="small muted" style="margin:-4px 0 6px">Load a full Baseball Strong day. You can add or remove exercises after.</p>${templateChipsHTML("wktemplate", wd.program && wd.program.day)}` : ""}
-    ${wd.recordMode ? "" : `    <h3>${wd.cat==="practice"?"What Are You Working On?":"What Are You Training?"}</h3>
+    ${(wd.recordMode || (wd.editing && wd.cat==="practice")) ? "" : `    <h3>${wd.cat==="practice"?"What Are You Working On?":"What Are You Training?"}</h3>
     <div class="chips sec-chips" style="margin-bottom:14px">${secsFor(wd.cat).map(([k,l]) => `<button class="chip" aria-pressed="${wd.sections.includes(k)}" data-act="wksec" data-v="${k}">${wd.sections.includes(k)?"✓":"+"} ${l}</button>`).join("")}</div>`}
-    <div class="fgrid">
+    <div class="fgrid ${wd.editing && wd.cat==="practice" ? "row4" : ""}">
       ${wd.cat==="practice" ? `<label class="f">Date<input class="i" type="date" data-wk="date" value="${esc(wd.date||cur)}"></label>` : `<label class="f">Date<input class="i" type="date" data-wk="date" value="${esc(wd.date||cur)}"></label>`}
-      ${wd.recordMode ? "" : `<label class="f">Type<select class="i" data-wk="type">${(wd.cat==="practice" ? PTYPES : ["Training",...TYPES]).map(t=>`<option ${wd.type===t?"selected":""}>${t}</option>`).join("")}</select></label>`}
+      ${wd.recordMode ? "" : `<label class="f">${wd.editing && wd.cat==="practice" ? "Session" : "Type"}<select class="i" data-wk="type">${(wd.cat==="practice" ? PTYPES : ["Training",...TYPES]).map(t=>`<option ${wd.type===t?"selected":""}>${t}</option>`).join("")}</select></label>`}
       <label class="f">Start<input class="i" type="time" data-wk="time" value="${esc(wd.time||"")}"></label>
       <label class="f">Duration (min)<input class="i" type="number" min="0" inputmode="numeric" data-wk="dur" value="${esc(wd.dur)}"></label>
-      ${wd.recordMode ? "" : `<label class="f">Calories burned<span class="h">optional</span><input class="i" type="number" min="0" inputmode="numeric" data-wk="kcal" value="${esc(wd.kcal)}"></label>`}
+      ${(wd.recordMode || (wd.editing && wd.cat==="practice")) ? "" : `<label class="f">Calories burned<span class="h">optional</span><input class="i" type="number" min="0" inputmode="numeric" data-wk="kcal" value="${esc(wd.kcal)}"></label>`}
       ${endurance?`<label class="f">Distance<span class="h">${U==="kg"?"km":"mi"}</span><input class="i" type="number" min="0" step="0.1" inputmode="decimal" data-wk="dist" value="${esc(wd.dist)}"></label>`:""}
     </div>
     ${wd.cat==="practice" ? `<label class="f">Quality <span class="h" id="qualWord">${wd.quality ? `${wd.quality} · ${QUALITY_WORDS[wd.quality]}` : "How well did the work go?"}</span>
@@ -2755,11 +2771,11 @@ function renderWkDlg(){
     ${exHTML || `<p class="small muted">Add ${wd.cat==="practice"?"drills":"exercises"} from the list below.</p>`}
     ${wd.recordMode ? "" : `<button class="linkbtn" data-act="addex">+ Add ${wd.cat==="practice"?"a drill":"an exercise"} by name</button>
 
-    <h3 style="margin-top:18px">${wd.cat==="practice"?"Drill Library":"Exercises"}</h3>
-    ${libHTML}`}
+    ${wd.editing ? "" : `<h3 style="margin-top:18px">${wd.cat==="practice"?"Drill Library":"Exercises"}</h3>
+    ${libHTML}`}`}
     <label class="f" style="margin-top:16px">Notes<textarea class="i" data-wk="notes" placeholder="How it felt, splits, anything to remember">${esc(wd.notes)}</textarea></label>
   </div>
-  <div class="dlg-foot" style="flex-wrap:wrap">${wd.recordMode ? `<button class="btn ghost sm" data-act="wkmodify" style="margin-right:auto">Modify</button>` : `${wd.editing ? `<button class="btn danger sm" data-act="delwkdlg">Delete</button>` : ""}<button class="btn ghost sm" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button>`}<button class="btn pl-yes" data-act="savewk">${wd.editing ? "✓ Save changes" : "✓ Complete"}</button></div>`;
+  <div class="dlg-foot" style="flex-wrap:wrap">${wd.recordMode ? `<button class="btn pl-yes" data-act="wkmodify" style="margin-right:auto">Edit</button>` : `${wd.editing ? `<button class="btn pl-no" data-act="delwkdlg">Delete</button>` : ""}<button class="btn btn-blue" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button>`}<button class="btn pl-yes" data-act="savewk">Save</button></div>`;
 }
 function saveWk(){ if(!wd || wd._saved) return;
   try { saveWkInner(); wd._saved = true; } catch(err){ console.error(err); toast("Couldn't save: " + ((err && err.message) || err)); } }
@@ -2795,6 +2811,7 @@ document.addEventListener("click", e => {
     case "calshift": cur = calView==="week" ? addDays(cur, 7*(+v)) : (() => { const d = parse(cur); const t = new Date(d.getFullYear(), d.getMonth()+(+v), 1); return ds(t); })(); render(); break;
     case "addplan": openPlan(null); break;
     case "editplan": openPlanView(b.dataset.id); break;
+    case "wkedit": wd.viewMode = false; renderWkDlg(); break;
     case "wkmodify": { const id = wd && wd.planId; if(!id) break; wd._saved = true; closeDlg($("#wkDlg")); openPlan(id); break; }
     case "planmodify": pd.view = "edit"; renderPlanDlg(); break;
     case "plankind": if(pd.kind !== v && v !== "meal"){ pd.sections = []; pd.exIds = []; } pd.kind = v; if(v!=="meal" && (!pd.time || Object.values(MEAL_TIME).includes(pd.time))) pd.time = "17:00"; if(v==="meal") pd.time = MEAL_TIME[pd.meal]; renderPlanDlg(); break;
@@ -2823,7 +2840,7 @@ document.addEventListener("click", e => {
     case "delfood": editDay(cur, d => d.meals = d.meals.filter(m=>m.id!==b.dataset.id)); toast("Removed"); break;
     case "copyyday": { const y = getDay(addDays(cur,-1)).meals; editDay(cur, d => y.forEach(m => d.meals.push({...JSON.parse(JSON.stringify(m)), id:uid()}))); toast(`Copied ${y.length} items from yesterday`); break; }
     case "addwk": openWk(null); break;
-    case "editwk": openWk(b.dataset.id); break;
+    case "editwk": openWk(b.dataset.id); if(b.dataset.mode==="edit" && wd){ wd.viewMode = false; renderWkDlg(); } break;
     case "dupwkdlg": { if(!wd) break; wd.id = wd.id || uid(); const id = wd.id, target = wd.date || cur; saveWk(); if(wd._saved){ if(target !== cur){ cur = target; render(); } setTimeout(() => openDup("session", id), 50); } break; }
     case "delwkdlg": { const id = wd && wd.id, kind = wd && wd.cat==="practice" ? "practice" : "session"; if(!id) break;
       askConfirm(`Delete this ${kind}? This can't be undone.`, "Delete").then(ok => { if(!ok) return; editDay(cur, d => d.workouts = d.workouts.filter(w => w.id!==id)); if(wd) wd._saved = true; closeDlg($("#wkDlg")); toast(kind==="practice" ? "Practice deleted" : "Session deleted"); }); break; }
@@ -2905,7 +2922,7 @@ document.addEventListener("click", e => {
     // recovery tools
     case "toggletool": { const id = b.dataset.id, t = toolList(cur).find(x=>x.id===id);
       editDay(cur, d => { d.tools = d.tools || {}; if(d.tools[id]) delete d.tools[id]; else d.tools[id] = {name:t.name, unit:t.unit, amt: num(t.amt)?+t.amt:null, temp:null, hasTemp:!!t.temp}; }); break; }
-    case "addtool": openTool(null); break;
+    case "addtool": openTool(null); if(tab === "today"){ tdlg.logNow = true; renderToolDlg(); } break;
     case "tooledit": toolEdit = !toolEdit; render(); break;
     case "pintool": { const t = state.profile.tools.find(x => x.id===b.dataset.id); if(t){ t.pinned = !t.pinned; save("profile"); render(); toast(t.pinned ? `${t.name} is on the Today screen` : `${t.name} removed from Today`); } break; }
     case "addlib": { const p = [...DEFAULT_TOOLS, ...TOOL_PRESETS][+v]; state.profile.tools.push({id:uid(), ...p}); save("profile"); render(); toast(`Added ${p.name} to Recovery Tools`); break; }
@@ -3055,8 +3072,8 @@ setAppH(); window.addEventListener("resize", setAppH); if(window.visualViewport)
 /* ==========================================================================
    SUPABASE SETUP — paste your project's values here (Settings → API)
    ========================================================================== */
-const SUPABASE_URL = "https://vcurpxoxyvzokyyoeeir.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nyto9VAlT4hsQ5SLkX7zPQ_zW5YrFQO";
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const VIDEO_BUCKET = "exercise-videos";
 /* ========================================================================== */
 
@@ -3172,26 +3189,45 @@ async function importData(file){
     toast(`Imported ${n} days`);
   } catch(e){ toast("Import failed: " + (e.message || e)); }
 }
+/* Profile photo: cropped to a 256 px square JPEG and saved with your profile */
+async function setPhoto(file){
+  try {
+    const url = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+    const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error("That image couldn't be opened. Try a JPEG or PNG.")); i.src = url; });
+    const S = 256, side = Math.min(img.naturalWidth, img.naturalHeight), c = document.createElement("canvas"); c.width = c.height = S;
+    c.getContext("2d").drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, S, S);
+    state.profile.avatar = c.toDataURL("image/jpeg", 0.85); save("profile");
+    renderAcctBtn(); if($("#acctDlg").open) renderAccount(); toast("Profile photo updated");
+  } catch(e){ toast("Couldn't use that photo: " + (e.message || e)); }
+}
+document.addEventListener("change", e => { if(e.target.id === "photoFile"){ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) setPhoto(f); } });
 document.addEventListener("change", e => { if(e.target.id === "importFile"){ const f = e.target.files && e.target.files[0]; e.target.value = ""; if(f) importData(f); } });
 document.addEventListener("click", e => {
   const b = e.target.closest("[data-sb]"); if(!b) return;
   if(b.dataset.sb === "export") exportData();
   if(b.dataset.sb === "import"){ const f = (b.closest("dialog") || document).querySelector("#importFile") || $("#importFile"); if(f) f.click(); }
   if(b.dataset.sb === "account") openAccount();
+  if(b.dataset.sb === "photo"){ const f = $("#photoFile"); if(f) f.click(); }
+  if(b.dataset.sb === "photodel"){ delete state.profile.avatar; save("profile"); renderAcctBtn(); renderAccount(); toast("Photo removed"); }
   if(b.dataset.sb === "acctsave") saveAccount();
   if(b.dataset.sb === "signout") SB.auth.signOut().then(() => location.reload());
 });
 const PERSON_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
 const fullName = () => (SESSION && SESSION.user && SESSION.user.user_metadata && SESSION.user.user_metadata.full_name) || "";
 function initials(n){ return n.trim().split(/\s+/).slice(0,2).map(w => w[0].toUpperCase()).join(""); }
-function renderAcctBtn(){ const b = $("#acctBtn"); if(!b) return; const n = fullName(); b.innerHTML = n ? `<span class="acct-ini">${esc(initials(n))}</span>` : PERSON_SVG; b.title = n || (SESSION && SESSION.user ? SESSION.user.email : "Account"); }
+const avatarURL = () => (state && state.profile && state.profile.avatar) || "";
+function avatarInner(cls){ const a = avatarURL(), n = fullName(); return a ? `<img class="${cls}" src="${a}" alt="">` : n ? `<span class="acct-ini">${esc(initials(n))}</span>` : PERSON_SVG; }
+function renderAcctBtn(){ const b = $("#acctBtn"); if(!b) return; const n = fullName(); b.classList.toggle("has-photo", !!avatarURL()); b.innerHTML = avatarInner("acct-img"); b.title = n || (SESSION && SESSION.user ? SESSION.user.email : "Account"); }
 let acctMsg = null;
 function openAccount(){ acctMsg = null; renderAccount(); openDlg($("#acctDlg")); }
 function renderAccount(){
   const u = (SESSION && SESSION.user) || {}, pending = u.new_email;
   $("#acctDlg").innerHTML = `<div class="dlg-head"><h2>Profile</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
   <div class="dlg-body">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px"><span class="acct-big">${fullName() ? esc(initials(fullName())) : PERSON_SVG}</span><div><b>${esc(fullName() || "Add your name")}</b><div class="small muted">${esc(u.email || "")}</div></div></div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px"><button class="acct-big" data-sb="photo" aria-label="Change profile photo">${avatarURL() ? `<img class="acct-img" src="${avatarURL()}" alt="">` : fullName() ? esc(initials(fullName())) : PERSON_SVG}<span class="acct-cam">+</span></button>
+      <div><b>${esc(fullName() || "Add your name")}</b><div class="small muted">${esc(u.email || "")}</div>
+      <div class="actions" style="margin-top:6px"><button class="linkbtn" data-sb="photo">${avatarURL() ? "Change photo" : "Add photo"}</button>${avatarURL() ? `<button class="linkbtn" style="color:var(--warn)" data-sb="photodel">Remove</button>` : ""}</div></div></div>
+    <input type="file" id="photoFile" accept="image/*" hidden>
     <label class="f">Full name<input class="i" id="acctName" autocomplete="name" value="${esc(fullName())}" placeholder="Cullen Scott"></label>
     <label class="f">Email<span class="h">${pending ? `Waiting for you to confirm ${esc(pending)}` : "Changing it sends a confirmation link to the new address"}</span><input class="i" id="acctEmail" type="email" autocomplete="email" inputmode="email" value="${esc(u.email || "")}"></label>
     <h3 style="margin-top:6px">Change password</h3>
