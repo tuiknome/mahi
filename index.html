@@ -900,7 +900,7 @@ function renderPlanRecord(){
     ${body}
     ${(isMeal ? items.length : tools.length) ? `<p class="small muted" style="margin-top:10px">Change the amounts to what you actually ${isMeal?"had":"did"}, then tap Save.</p>` : ""}
   </div>
-  <div class="dlg-foot"><button class="btn pl-yes" data-act="planmodify" style="margin-right:auto">Edit</button>${btn}</div>`;
+  <div class="dlg-foot"><button class="btn pl-no" data-act="delplanconfirm">Delete</button><button class="btn pl-yes" data-act="planmodify" style="margin-right:auto">Edit</button>${btn}</div>`;
 }
 function renderPlanDlg(){
   if(pd && pd.view === "record") return renderPlanRecord();
@@ -921,7 +921,7 @@ function renderPlanDlg(){
         <label class="f">Start<input class="i" type="time" data-pf="time" value="${esc(pd.time)}"></label>
         <label class="f">Duration (min)<input class="i" type="number" inputmode="numeric" min="0" data-pf="dur" value="${esc(pd.dur)}"></label></div>${planExHTML()}`}
   </div>
-  <div class="dlg-foot" style="flex-wrap:wrap">${pd.editing?`<button class="btn pl-no" data-act="delplan">Delete</button><button class="btn btn-blue" data-act="plandup">Duplicate</button><button class="btn sm pl-yes" data-act="plancomplete" style="margin-right:auto">✓ Complete</button><button class="btn ghost sm" data-act="saveplan">Save</button><button class="btn sm" data-act="logplan">${pd.kind==="meal"?"Log this meal":pd.kind==="practice"?"Start practice":pd.kind==="recovery"?"Log recovery":"Start session"}</button>`
+  <div class="dlg-foot" style="flex-wrap:wrap">${pd.editing?`<button class="btn btn-blue" data-act="plandup">Duplicate</button><button class="btn pl-yes" data-act="plancomplete" style="margin-right:auto">✓ Complete</button><button class="btn pl-yes" data-act="saveplan">Save</button>`
     :`<button class="btn ghost" data-act="closedlg">Cancel</button><button class="btn" data-act="saveplan">Add to calendar</button>`}</div>`;
 }
 function savePlan(close=true){
@@ -2728,7 +2728,7 @@ function renderWkView(){
     ${r ? `<p class="small" style="margin:10px 0 0">Jump rope 20 s · Best <b>${r.best}</b> · Average <b>${r1(r.avg)}</b></p>` : ""}
     ${wd.notes ? `<h3 style="margin-top:14px">Notes</h3><p class="small">${esc(wd.notes)}</p>` : ""}
   </div>
-  <div class="dlg-foot"><button class="btn btn-blue" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button><button class="btn pl-yes" data-act="wkedit">Edit</button></div>`;
+  <div class="dlg-foot"><button class="btn pl-no" data-act="delwkdlg">Delete</button><button class="btn btn-blue" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button><button class="btn pl-yes" data-act="wkedit">Edit</button></div>`;
 }
 function renderWkDlg(){
   if(wd.viewMode) return renderWkView();
@@ -2775,7 +2775,7 @@ function renderWkDlg(){
     ${libHTML}`}`}
     <label class="f" style="margin-top:16px">Notes<textarea class="i" data-wk="notes" placeholder="How it felt, splits, anything to remember">${esc(wd.notes)}</textarea></label>
   </div>
-  <div class="dlg-foot" style="flex-wrap:wrap">${wd.recordMode ? `<button class="btn pl-yes" data-act="wkmodify" style="margin-right:auto">Edit</button>` : `${wd.editing ? `<button class="btn pl-no" data-act="delwkdlg">Delete</button>` : ""}<button class="btn btn-blue" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button>`}<button class="btn pl-yes" data-act="savewk">Save</button></div>`;
+  <div class="dlg-foot" style="flex-wrap:wrap">${wd.recordMode ? `<button class="btn pl-no" data-act="delplanrec">Delete</button><button class="btn pl-yes" data-act="wkmodify" style="margin-right:auto">Edit</button>` : `<button class="btn btn-blue" data-act="dupwkdlg" style="margin-right:auto">Duplicate</button>`}<button class="btn pl-yes" data-act="savewk">Save</button></div>`;
 }
 function saveWk(){ if(!wd || wd._saved) return;
   try { saveWkInner(); wd._saved = true; } catch(err){ console.error(err); toast("Couldn't save: " + ((err && err.message) || err)); } }
@@ -2812,6 +2812,8 @@ document.addEventListener("click", e => {
     case "addplan": openPlan(null); break;
     case "editplan": openPlanView(b.dataset.id); break;
     case "wkedit": wd.viewMode = false; renderWkDlg(); break;
+    case "delplanrec": { const id = wd && wd.planId; if(!id) break; askConfirm("Delete this planned session?", "Delete").then(ok => { if(!ok) return; wd._saved = true; closeDlg($("#wkDlg")); editDay(cur, d => d.plan = (d.plan||[]).filter(x => x.id!==id)); toast("Removed from calendar"); }); break; }
+    case "delplanconfirm": { const id = pd && pd.id; if(!id) break; askConfirm("Delete this plan?", "Delete").then(ok => { if(!ok) return; closeDlg($("#planDlg")); editDay(cur, d => d.plan = (d.plan||[]).filter(x => x.id!==id)); toast("Removed from calendar"); }); break; }
     case "wkmodify": { const id = wd && wd.planId; if(!id) break; wd._saved = true; closeDlg($("#wkDlg")); openPlan(id); break; }
     case "planmodify": pd.view = "edit"; renderPlanDlg(); break;
     case "plankind": if(pd.kind !== v && v !== "meal"){ pd.sections = []; pd.exIds = []; } pd.kind = v; if(v!=="meal" && (!pd.time || Object.values(MEAL_TIME).includes(pd.time))) pd.time = "17:00"; if(v==="meal") pd.time = MEAL_TIME[pd.meal]; renderPlanDlg(); break;
@@ -3072,8 +3074,8 @@ setAppH(); window.addEventListener("resize", setAppH); if(window.visualViewport)
 /* ==========================================================================
    SUPABASE SETUP — paste your project's values here (Settings → API)
    ========================================================================== */
-const SUPABASE_URL = "https://vcurpxoxyvzokyyoeeir.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nyto9VAlT4hsQ5SLkX7zPQ_zW5YrFQO";
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const VIDEO_BUCKET = "exercise-videos";
 /* ========================================================================== */
 
