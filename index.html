@@ -409,6 +409,7 @@ a.watch{font-size:13px;font-weight:600;color:var(--protein);text-decoration:none
 .planned-row small{display:block;color:var(--muted);font-size:12px}
 body.signed-out header.top, body.signed-out main, body.signed-out .bottomnav{display:none!important}
 #auth{min-height:100vh;min-height:100dvh;display:grid;place-items:center;padding:24px 16px;background:var(--bg)}
+.auth-links{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
 .auth-card{width:min(400px,100%);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px}
 .acct-btn{border-radius:50%;margin-left:6px;color:var(--ink)}
 .acct-ini{font-weight:700;font-size:13px;letter-spacing:.02em}
@@ -432,6 +433,9 @@ button.acct-big{position:relative;border:0;cursor:pointer;padding:0;width:64px;h
 .view-ex b{font-size:14px}
 .view-ex span{font-size:13px;color:var(--muted)}
 .tool-quick[aria-pressed="true"]{border-color:var(--recover);color:var(--recover);background:color-mix(in srgb,var(--recover) 12%,var(--surface))}
+select.band-sel{border-left:8px solid var(--bc, var(--line));padding-left:8px}
+#wkDlg input[type=date].i, #wkDlg input[type=time].i, #planDlg input[type=date].i, #planDlg input[type=time].i, #dupDlg input[type=date].i{text-align:center}
+#wkDlg input[type=date].i::-webkit-date-and-time-value, #wkDlg input[type=time].i::-webkit-date-and-time-value, #planDlg input[type=date].i::-webkit-date-and-time-value, #planDlg input[type=time].i::-webkit-date-and-time-value, #dupDlg input[type=date].i::-webkit-date-and-time-value{text-align:center}
 .stack-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 /* Title Case for titles and names */
 h2,h3,h4,.wk-title{text-transform:capitalize}
@@ -532,6 +536,14 @@ const FOODS = [
  ["Quinoa, cooked",120,4.4,21.3,1.9,2.8,0.9,7,172,17,1.5,0,"cup (185 g)",185],
  ["Whole wheat bread",252,12.4,43,3.5,6,4.4,450,250,161,2.5,0,"slice (32 g)",32],
  ["Kroger Dunford White Bread",250,10,47.5,2.5,2.5,2.5,600,88,83,2.5,0,"slice (40 g)",40],
+ ["Kroger White Bolillo Roll",272.7,7.07,56.6,2.02,2.02,2.02,545,91,81,4.04,0,"roll (99 g)",99],
+ ["Boar's Head Tavern Ham",107.1,17.86,3.57,2.68,0,3.57,964,286,0,1.79,0,"2 oz (56 g)",56],
+ ["Sargento Sharp Cheddar Sliced Cheese",381,23.8,0,33.3,0,0,595,71,714,0,0,"slice (21 g)",21],
+ ["Boar's Head Delicatessen Style Mustard",100,0,0,0,0,0,800,0,0,0,0,"tsp (5 g)",5],
+ ["Premier Protein Pancake & Waffle Mix (dry)",369,23.1,60,3.08,1.54,9.23,1062,102,215,1.54,0,"½ cup dry mix (65 g)",65],
+ ["Goolsby's Premium Country Sausage Patty",400,13.33,0,37.8,0,0,600,0,0,1.6,0,"patty (45 g)",45],
+ ["Kirkland Grass-Fed Butter (salted)",714,0,0,78.6,0,0,536,0,0,0,0,"tbsp (14 g)",14],
+ ["Kroger 1% Lowfat Milk",45.8,3.33,5.42,1.04,0,5,52,162.5,125,0,0,"cup (240 ml)",240],
  ["Flour tortilla",312,8.3,51.6,8,3.4,3.4,650,150,120,3.3,0,"8-inch (49 g)",49],
  ["Granola",471,10,64,20,7,24,25,400,60,3,0,"½ cup (60 g)",60],
  ["Sweet potato, baked",90,2,20.7,0.2,3.3,6.5,36,475,38,0.7,19.6,"medium (114 g)",114],
@@ -560,7 +572,7 @@ const NUT = {
   fib:{l:"Fiber",u:"g"}, sug:{l:"Sugar",u:"g",limit:1}, na:{l:"Sodium",u:"mg",limit:1},
   k:{l:"Potassium",u:"mg"}, ca:{l:"Calcium",u:"mg"}, fe:{l:"Iron",u:"mg"}, vc:{l:"Vitamin C",u:"mg"}
 };
-const MEALS = [["preworkout","Pre-Workout"],["breakfast","Breakfast"],["lunch","Lunch"],["dinner","Dinner"],["snacks","Snacks"]];
+const MEALS = [["preworkout","Pre-Workout/Pre-Game"],["breakfast","Breakfast"],["postworkout","Post-Workout"],["lunch","Lunch"],["postpractice","Post Practice/Game"],["dinner","Dinner"],["snacks","Snacks"]];
 const TYPES = ["Strength","Run","Cycle","Swim","Row","HIIT","Sport","Mobility","Walk","Other"];
 const RPE_WORDS = ["","Very easy","Easy","Moderate","Somewhat hard","Hard","Hard","Very hard","Very hard","Near max","Max effort"];
 const TABS = [["today","Today"],["food","Food"],["training","Training"],["practice","Practice"],["recovery","Recovery"],["trends","Trends"],["targets","Targets"]];
@@ -736,7 +748,15 @@ function renderTabs(){
 }
 
 /* ---------- Calendar: meal timing and workouts ---------- */
-const MEAL_TIME = {breakfast:"07:30", preworkout:"15:30", lunch:"12:30", dinner:"18:30", snacks:"15:30"};
+const MEAL_TIME = {breakfast:"07:30", preworkout:"15:30", postworkout:"08:30", lunch:"12:30", postpractice:"19:30", dinner:"18:30", snacks:"15:30"};
+// Post meals default to 30 minutes after the day's last training session (Post-Workout) or practice (Post Practice/Game)
+function postMealTime(d, kind){
+  const day = getDay(d), ends = [];
+  const want = w => kind === "postpractice" ? w.cat === "practice" : w.cat !== "practice";
+  day.workouts.filter(want).forEach(w => { const t = toMin(w.time); if(t !== null) ends.push(t + (+w.dur || 0)); });
+  (day.plan||[]).filter(p => !p.done && (kind === "postpractice" ? p.kind === "practice" : p.kind === "workout")).forEach(p => { const t = toMin(p.time); if(t !== null) ends.push(t + (+p.dur || 0)); });
+  return ends.length ? fromMin(Math.min(24*60 - 1, Math.max(...ends) + 30)) : MEAL_TIME[kind];
+}
 // Pre-workout defaults to an hour before the day's first workout, practice or program session
 function preWorkoutTime(d){
   const day = getDay(d), times = [];
@@ -751,7 +771,7 @@ const nowHM = () => { const d = new Date(); return fromMin(d.getHours()*60 + d.g
 const fmtTime = t => { const m = typeof t === "number" ? t : toMin(t); if(m===null) return ""; const d = new Date(2000,0,1,Math.floor(m/60),m%60); return d.toLocaleTimeString(undefined,{hour:"numeric",minute:"2-digit"}); };
 const fmtGap = m => { m = Math.round(Math.abs(m)); const h = Math.floor(m/60), mm = m%60; return h ? `${h}h${mm?` ${mm}m`:""}` : `${mm}m`; };
 const mealTime = m => m.time || MEAL_TIME[m.meal] || "12:00";
-const defaultTimeFor = meal => meal === "preworkout" ? preWorkoutTime(cur) : cur === todayStr() ? nowHM() : MEAL_TIME[meal] || "12:00";
+const defaultTimeFor = meal => meal === "preworkout" ? preWorkoutTime(cur) : (meal === "postworkout" || meal === "postpractice") ? postMealTime(cur, meal) : cur === todayStr() ? nowHM() : MEAL_TIME[meal] || "12:00";
 let calView = "week";
 
 function agenda(d){
@@ -972,10 +992,10 @@ function recoveryCardHTML(){
   const sleepH = num(rec.sleep) ? +rec.sleep : 0, rd = readiness(cur), short = need - sleepH;
   const done = getDay(cur).tools || {}, pins = state.profile.tools.filter(t => t.pinned && !/^compression therapy$/i.test(t.name)), nDone = Object.keys(done).length, toolGoal = Math.max(pins.length, 1);
   const bar = (label, txt, pct, color) => `<div class="lane"><div class="lane-top"><b>${label}</b><span>${txt}</span></div><div class="track"><div class="fill" style="width:${clamp(pct,0,100)}%;background:${color}"></div></div></div>`;
-  const rem = rd ? `Readiness ${rd.score}` : sleepH ? (short > 0 ? `${fmtHM(short*60)} short` : "Sleep need met") : "No check-in";
+  const rem = sleepH ? (short > 0 ? `${fmtHM(short*60)} short` : "Sleep need met") : "No check-in";
   return `<div class="panel" style="margin-bottom:20px">
     <div class="sec-head"><h2>Recovery</h2><button class="btn sm" data-act="addtool">Add tool</button></div>
-    <div class="kcal-line"><span class="n">${sleepH ? fmtHM(sleepH*60) : "0:00"}</span><span class="of">of ${fmtHM(need*60)} sleep</span><span class="rem" style="color:${rd ? (rd.score>=60?"var(--good)":rd.score>=40?"var(--carbs)":"var(--warn)") : "var(--ink)"}">${rem}</span></div>
+    <div class="kcal-line"><span class="n">${sleepH ? fmtHM(sleepH*60) : "0:00"}</span><span class="of">of ${fmtHM(need*60)} sleep</span><span class="rem">${rem}</span></div>
     ${bar("Sleep", `${sleepH ? fmtHM(sleepH*60) : "0:00"} / ${fmtHM(need*60)} h`, sleepH/need*100, "var(--protein)")}
     ${bar("Whoop recovery", `${num(rec.whoopRec) ? r0(rec.whoopRec) : 0} / 100 %`, +rec.whoopRec || 0, num(rec.whoopRec) ? whoopZone(+rec.whoopRec).c : "var(--recover)")}
     ${bar("Energy", `${rec.energy || 0} / 5`, (rec.energy || 0)/5*100, "var(--carbs)")}
@@ -1256,7 +1276,7 @@ const LIB_RAW = {
  ]
 };
 const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
-const LIBRARY = Object.fromEntries(SECTIONS.map(([k]) => [k, (LIB_RAW[k]||[]).map(([name,measure,cue]) => ({id:`${k}-${slug(name)}`, section:k, name, measure, cue}))]));
+const LIBRARY = Object.fromEntries(SECTIONS.map(([k]) => [k, (LIB_RAW[k]||[]).map(([name,measure,cue]) => ({id:`${k}-${slug(name)}`, section:k, name, measure: adjMeasure(name, measure), cue}))]));
 /* ---------- Practice: baseball skills + S2 cognitive drills ---------- */
 const GROUPS = {};
 const PITCH_SUBS = [["pitchLower","Lower Half"],["pitchSeq","Sequencing"],["pitchArm","Arm Action"],["pitchPen","Bullpen & Command"]];
@@ -1359,7 +1379,7 @@ const PLIB_RAW = {
   ["Motor · Hitter's Med Ball Throws","reps","Maven Motor. Rotational shot-put and scoop throws from the hitting stance."],
   ["Tee Work","hits","Line drives through the middle. Use quality contacts as the success count."],
   ["Front Toss","hits","Short distance, focus on barrel path and direction."],
-  ["Machine BP","hits","Set speed and pitch. Count hard-hit balls."],
+  ["Machine BP","machine","Log reps with the machine's pitch type and velo."],
   ["High-Velo Machine","hits","Move the machine up or speed it up to shrink reaction time."],
   ["Batting Practice","hits","Rounds with a plan for each one."],
   ["Live At-Bats","hits","Game speed against live pitching. Count quality at-bats."],
@@ -1389,7 +1409,7 @@ const PLIB_RAW = {
   ["Tag-Up Reads","hits","Read depth and the outfielder's momentum."]
  ]
 };
-[...S2_SUBS, ...PITCH_SUBS, ...PSECTIONS.filter(([k]) => k!=="s2all" && k!=="pitchall")].forEach(([k]) => { LIBRARY[k] = PLIB_RAW[k].map(([name,measure,cue]) => ({id:`${k}-${slug(name)}`, section:k, name, measure, cue, practice:true})); });
+[...S2_SUBS, ...PITCH_SUBS, ...PSECTIONS.filter(([k]) => k!=="s2all" && k!=="pitchall")].forEach(([k]) => { LIBRARY[k] = PLIB_RAW[k].map(([name,measure,cue]) => ({id:`${k}-${slug(name)}`, section:k, name, measure: adjMeasure(name, measure), cue, practice:true})); });
 const secsFor = cat => cat === "practice" ? PSECTIONS : SECTIONS;
 Object.assign(GROUPS, {s2all:{subs:S2_SUBS, prefix:"S2 · ", short:"S2"}, pitchall:{subs:PITCH_SUBS, prefix:"Pitching · ", short:"Pitching"}});
 const groupOf = k => GROUPS[k] ? k : Object.keys(GROUPS).find(g => GROUPS[g].subs.some(x => x[0]===k)) || null;
@@ -1414,6 +1434,14 @@ const secName = k => { if(k==="program") return "Program"; const g = groupOf(k);
 const distU = () => state.profile.units==="lb" ? "yd" : "m";
 const longU = () => state.profile.units==="lb" ? "mi" : "km";
 const wU = () => state.profile.units==="lb" ? "lbs" : "kg";
+/* Med ball work records the ball weight; band work records the band colour */
+const BAND_COLORS = [["Yellow","#EAB308"],["Red","#DC2626"],["Green","#16A34A"],["Blue","#2563EB"],["Black","#111827"],["Purple","#7C3AED"],["Orange","#EA580C"],["Gray","#6B7280"]];
+function bandHex(c){ const x = BAND_COLORS.find(b => b[0]===c); return x ? x[1] : "var(--line)"; }
+function adjMeasure(name, m){
+  if(/med[- ]?ball|\bMB\b/i.test(name) && (m==="reps" || m==="hits")) return "load";
+  if(/\bband\b/i.test(name) && (m==="reps" || m==="load" || m==="hits")) return "band";
+  return m;
+}
 function measureFields(m){
   const U = state.profile.units;
   return ({
@@ -1424,7 +1452,9 @@ function measureFields(m){
     cardio:[["min","Minutes","decimal"],["dist",`Distance (${longU()})`,"decimal"]],
     min:[["min","Minutes","decimal"]],
     rope:[["reps","Clean reps","numeric"]],
-    hits:[["reps","Reps","numeric"],["good","Successful","numeric"]],
+    band:[["reps","Reps","numeric"],["band","Band color","color"]],
+    hits:[["reps","Reps","numeric"]],
+    machine:[["reps","Reps","numeric"],["type","Pitch type","ptype"],["velo","Velo (mph)","decimal"]],
     pitches:[["reps","Pitches","numeric"],["good","Strikes","numeric"],["velo","Top velo (mph)","decimal"]],
     pitchlog:[],
     swinglog:[],
@@ -1439,13 +1469,15 @@ function fmtSet(s, m){
     case "cardio": return `${s.min||0} min${num(s.dist)&&+s.dist?` · ${s.dist} ${longU()}`:""}`;
     case "min": return `${s.min||0} min`;
     case "rope": return `${s.reps||0}`;
+    case "machine": return `${s.reps||0}${s.type ? " × " + s.type : ""}${num(s.velo) && +s.velo ? " @ " + s.velo + " mph" : ""}`;
+    case "band": return `${s.reps||0}${s.band ? " · " + s.band : ""}`;
     case "hits": return num(s.good)&&s.good!=="" ? `${s.good||0}/${s.reps||0}` : `${s.reps||0}`;
     case "pitches": return `${s.good||0}/${s.reps||0} strikes${num(s.velo)&&+s.velo?` · ${s.velo} mph`:""}`;
     case "carry": return `${s.wt||0} ${wU()} × ${s.dist||0}${distU()}`;
     default: return `${s.reps||0}×${s.wt||0}`;
   }
 }
-const MEASURE_NAMES = [["hits","Reps and successful"],["pitches","Pitches, strikes and velo"],["pitchlog","Pitch by pitch (type, execute, velo)"],["swinglog","Swing by swing (pitch type, pitch speed, exit velo)"],["min","Minutes"],["load","Reps and weight"],["reps","Reps only"],["time","Time (seconds)"],["dist","Distance and time"],["cardio","Minutes and distance"]];
+const MEASURE_NAMES = [["hits","Reps and successful"],["pitches","Pitches, strikes and velo"],["pitchlog","Pitch by pitch (type, execute, velo)"],["swinglog","Swing by swing (pitch type, pitch speed, exit velo)"],["min","Minutes"],["band","Reps and band color"],["machine","Reps, pitch type and velo"],["load","Reps and weight"],["reps","Reps only"],["time","Time (seconds)"],["dist","Distance and time"],["cardio","Minutes and distance"]];
 const videoId = exId => (state.profile.exVideos||{})[exId] || null;
 const videoSrc = exId => { const v = videoId(exId); return v ? assetUrl(v) : null; };
 const PLAY = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>';
@@ -1682,7 +1714,7 @@ const SCHEDULES = {monfri:[1,2,3,4,5], sunthu:[0,1,2,3,4], tuesat:[2,3,4,5,6]};
 const SCHED_NAMES = [["monfri","Monday – Friday"],["sunthu","Sunday – Thursday"],["tuesat","Tuesday – Saturday"]];
 const REACTIVE = /pogo|hop|drop jump|snap down|vertical jump|bound|broad jump|trap-bar jump/i;
 const PROGRAM_EX = Object.entries(PROGRAM.days).flatMap(([dk, d]) => d.ex.map(([name, sets, reps, measure, q]) => ({
-  id:`prog-${slug(name)}`, section:"program", day:dk, name, sets, reps, measure, url: YT(q||name),
+  id:`prog-${slug(name)}`, section:"program", day:dk, name, sets, reps, measure: adjMeasure(name, measure), url: YT(q||name),
   cue: measure==="rope" ? "Count clean reps each 20 s set; keep jumps low and rhythmic." : REACTIVE.test(name) ? "Short, quiet contacts; stop when contact quality drops." : ""
 })));
 function progConf(){ const p = state.profile.program || {}; return {start: p.start || nextMonday(), time: p.time || "16:00", active: p.active !== false, sched: SCHEDULES[p.sched] ? p.sched : "monfri"}; }
@@ -1864,7 +1896,7 @@ function mavenPitchHTML(){
   return `${P.map(([k,n,d]) => `<div class="phase" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><span><b style="color:var(--ink)">${n}</b><span class="small">${d}</span></span><button class="btn sm ghost" data-act="s2drills" data-v="${k}">Drills</button></div>`).join("")}
     <div class="actions" style="margin-top:8px"><button class="btn sm" data-act="s2drills" data-v="pitchPen">Bullpen &amp; command</button><button class="btn sm ghost" data-act="buildfrom" data-cat="practice" data-v="pitchPen">Log a bullpen</button></div>`;
 }
-function hitRate(e){ const t = (e.sets||[]).reduce((a,s)=>a+(+s.reps||0),0), g = (e.sets||[]).reduce((a,s)=>a+(+s.good||0),0); return t ? ` <b style="color:var(--ink)">· ${r0(g/t*100)}%</b>` : ""; }
+function hitRate(e){ const t = (e.sets||[]).reduce((a,s)=>a+(+s.reps||0),0), g = (e.sets||[]).reduce((a,s)=>a+(+s.good||0),0); return t && g ? ` <b style="color:var(--ink)">· ${r0(g/t*100)}%</b>` : ""; }
 function practiceBrowserHTML(){
   const sec = wd.libTab || "hitting", g = groupOf(sec), top = g || sec, nm = g ? GROUPS[g].short : secName(top);
   return `<div class="chips sec-chips">${PSECTIONS.map(([k,l]) => `<button class="chip" aria-pressed="${top===k}" data-act="wklibtab" data-v="${k}">${l}</button>`).join("")}</div>
@@ -2150,7 +2182,7 @@ function toolsPanelHTML(){
   const tiles = lib.map(t => { const on = !!done[t.id];
     return `<button class="tool-tile" aria-pressed="${toolEdit?"false":on}" data-act="${toolEdit?"edittool":"toggletool"}" data-id="${t.id}"><span class="dot">${toolEdit?"✎":CHECK}</span>${esc(t.name)}</button>`; }).join("");
   const have = new Set(lib.map(t => t.name.toLowerCase()));
-  const more = [...DEFAULT_TOOLS, ...TOOL_PRESETS].map((p,i)=>[p,i]).filter(([p]) => !have.has(p.name.toLowerCase()));
+  const more = [...DEFAULT_TOOLS, ...TOOL_PRESETS].map((p,i)=>[p,i]).filter(([p]) => !have.has(p.name.toLowerCase()) && !/^(compression leggings|float tank|epsom salt bath|hyperbaric oxygen|contrast therapy)$/i.test(p.name));
   const editBody = `<div class="edit-list">${lib.map(t => `<div class="edit-row"><span class="nm">${esc(t.name)}<small>${num(t.amt)?`${r1(t.amt)} ${t.unit==="session"?"session":t.unit}`:""}</small></span>
       <button class="chip" aria-pressed="${!!t.pinned}" data-act="pintool" data-id="${t.id}">${t.pinned?"✓ On Today":"+ Today"}</button>
       <button class="x" data-act="edittool" data-id="${t.id}" aria-label="Edit ${esc(t.name)}">✎</button></div>`).join("")}</div>
@@ -2173,7 +2205,8 @@ function openTool(id){
 }
 function renderToolDlg(){
   const have = new Set(state.profile.tools.map(t => t.name.toLowerCase()));
-  const presets = [...DEFAULT_TOOLS, ...TOOL_PRESETS].map((p,i)=>[p,i]).filter(([p]) => !have.has(p.name.toLowerCase()));
+  const HIDE_TOOLS = /^(compression leggings|float tank|epsom salt bath|hyperbaric oxygen|contrast therapy)$/i;
+  const presets = [...DEFAULT_TOOLS, ...TOOL_PRESETS].map((p,i)=>[p,i]).filter(([p]) => !have.has(p.name.toLowerCase()) && !HIDE_TOOLS.test(p.name));
   const canSave = tdlg.editing ? !!tdlg.name.trim() : !!(tdlg.picked.length || tdlg.name.trim());
   const n = tdlg.picked.length + (tdlg.name.trim() ? 1 : 0);
   $("#toolDlg").innerHTML = `<div class="dlg-head"><h2>${tdlg.editing?"Edit Recovery Tool":"Add Recovery Tools"}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
@@ -2258,12 +2291,9 @@ function renderRecovery(){
   return `
   <div class="sec-head"><h2>Recovery</h2><span class="small muted">${cur===todayStr()?"Today":fmtShort(cur)} · saves as you go</span></div>
   ${plannedHTML("recovery")}
-  <div class="grid2 section">
+  <div class="panel section" id="toolsPanel">${toolsPanelHTML()}</div>
+  <div class="section">
     <div class="panel" id="whoopPanel">${whoopPanelHTML()}</div>
-    <div>
-      <div class="panel" id="readyPanel" style="margin-bottom:20px">${readinessPanelHTML()}</div>
-      <div class="panel" id="toolsPanel">${toolsPanelHTML()}</div>
-    </div>
   </div>
   <div class="panel">
     <h2>How You Feel</h2>
@@ -2429,7 +2459,12 @@ const CHIP = {
 const CHIP_PROTEINS = ["chicken","steak","barbacoa","carnitas","sofritas"];
 const CHIP_TOPS = ["fajita","tomato","corn","green","red","sourcream","cheese","guac","queso","lettuce"];
 const nOf = a => ({kcal:a[1], p:a[2], c:a[3], f:a[4], fib:a[5], sug:a[6], na:a[7], k:a[8]||0, ca:a[9]||0, fe:a[10]||0, vc:a[11]||0});
+/* Sodas in every common size: values scale from each drink's 12 oz label (kcal, sugar, sodium per oz) */
+const SODAS = [["Coca-Cola (Coke)",140/12,39/12,45/12],["Diet Coke",0,0,40/12],["Sprite",140/12,38/12,65/12],["Fanta Orange",160/12,44/12,55/12]];
+const SODA_SIZES = [["7.5 oz mini can",7.5],["8 oz glass bottle",8],["12 oz can",12],["16.9 oz bottle",16.9],["20 oz bottle",20],["1 L bottle",33.8],["2 L bottle",67.6]];
+const SODA_ROWS = SODAS.flatMap(([drink,k,sg,na]) => SODA_SIZES.map(([size,oz]) => [drink, size, [Math.round(k*oz/10)*10, 0, Math.round(sg*oz), 0, 0, Math.round(sg*oz), Math.round(na*oz/5)*5]]));
 const REST_RAW = [
+  ...SODA_ROWS,
   ...Object.entries(CHIP).map(([k,a]) => ["Chipotle", a[0], a.slice(1)]),
   // Chipotle · more items  [kcal, protein, carbs, fat, fiber, sugar, sodium]
   // Designs for Sport  [kcal, protein, carbs, fat, fiber, sugar, sodium, potassium, calcium, iron, vitC]
@@ -2447,6 +2482,22 @@ const REST_RAW = [
   ["Chipotle","Kid's Build Your Own (chicken)",[420,26,46,14,6,2,690]],
   ["Chipotle","Kid's Quesadilla",[460,22,40,25,1,1,920]],
   // McDonald's
+  // Premier Protein (frozen)
+  ["Premier Protein","Protein Pancakes (frozen) · 1 serving",[210,15,27,3.5,1,5,400]],
+  // Dave's Hot Chicken (No Spice; calories and protein from the published chart, other values approximate)
+  ["Dave's Hot Chicken","Tender",[490,25,32,28,1,1,1540]],
+  ["Dave's Hot Chicken","Slider",[620,31,52,30,2,6,1700]],
+  ["Dave's Hot Chicken","Bites · 10 pc",[650,41,40,36,1,1,2000]],
+  ["Dave's Hot Chicken","Fries · Regular",[440,6,58,20,5,0,870]],
+  ["Dave's Hot Chicken","Cheese Fries",[450,7,58,21,5,1,1000]],
+  ["Dave's Hot Chicken","Mac & Cheese",[290,14,25,16,1,3,700]],
+  ["Dave's Hot Chicken","Kale Slaw",[270,2,8,26,2,5,300]],
+  ["Dave's Hot Chicken","Dave's Sauce (side cup)",[180,0,2,19,0,1,300]],
+  ["Dave's Hot Chicken","#1 · 2 Tenders + Fries",[1230,56,103,66,6,2,3900]],
+  ["Dave's Hot Chicken","#2 · 2 Sliders + Fries",[1500,68,127,80,7,12,4300]],
+  ["Dave's Hot Chicken","#3 · 1 Tender + 1 Slider + Fries",[1370,62,116,73,7,7,4100]],
+  ["Dave's Hot Chicken","#4 · 1 Slider + Fries",[1060,37,110,50,7,6,2600]],
+  ["Dave's Hot Chicken","#5 · 1 Tender + Fries",[930,31,94,48,6,1,2410]],
   ["McDonald's","Big Mac",[590,25,46,34,3,9,1050]],
   ["McDonald's","Quarter Pounder with Cheese",[520,30,42,26,2,10,1140]],
   ["McDonald's","Double Quarter Pounder with Cheese",[740,48,43,42,2,10,1360]],
@@ -2739,7 +2790,7 @@ function renderWkDlg(){
       ${e.exId?`<div class="lib-nm" style="flex:1"><b>${esc(e.name)}</b><small>${e.target?`Target ${esc(e.target)}`:esc(secName(e.section))}</small></div>${e.url?progLink(e.url):""}`:`<input class="i" placeholder="Exercise name" data-ex="${ei}" data-f="name" value="${esc(e.name)}">`}
       <button class="x" data-act="delex" data-ex="${ei}" aria-label="Remove exercise">×</button></div>
     ${e.measure==="pitchlog" ? pitchLogHTML(e, ei) : e.measure==="swinglog" ? swingLogHTML(e, ei) : `<div class="set-row small muted" style="margin-top:8px;grid-template-columns:${cols}"><span>Set</span>${f.map(([,l])=>`<span>${l}</span>`).join("")}<span></span></div>
-    ${e.sets.map((s,si)=>`<div class="set-row" style="grid-template-columns:${cols}"><span class="small muted">${si+1}</span>${f.map(([k,,im])=>`<input class="i" type="number" inputmode="${im}" min="0" step="any" data-ex="${ei}" data-set="${si}" data-f="${k}" value="${esc(s[k]??"")}" placeholder="${k==="reps"&&ph?esc(ph.replace(/\/side| each/,"")):""}">`).join("")}<button class="x" data-act="delset" data-ex="${ei}" data-set="${si}" aria-label="Remove set">×</button></div>`).join("")}
+    ${e.sets.map((s,si)=>`<div class="set-row" style="grid-template-columns:${cols}"><span class="small muted">${si+1}</span>${f.map(([k,,im])=> im==="ptype" ? `<select class="i" data-ex="${ei}" data-set="${si}" data-f="${k}"><option value="">Type</option>${PITCH_TYPES.map(([c,l]) => `<option value="${c}" ${s[k]===c?"selected":""}>${l}</option>`).join("")}</select>` : im==="color" ? `<select class="i band-sel" data-ex="${ei}" data-set="${si}" data-f="${k}" style="--bc:${bandHex(s[k])}"><option value="">Band</option>${BAND_COLORS.map(([c]) => `<option ${s[k]===c?"selected":""}>${c}</option>`).join("")}</select>` : `<input class="i" type="number" inputmode="${im}" min="0" step="any" data-ex="${ei}" data-set="${si}" data-f="${k}" value="${esc(s[k]??"")}" placeholder="${k==="reps"&&ph?esc(ph.replace(/\/side| each/,"")):""}">`).join("")}<button class="x" data-act="delset" data-ex="${ei}" data-set="${si}" aria-label="Remove set">×</button></div>`).join("")}
     ${e.measure==="rope" ? (() => { const v = e.sets.map(s=>+s.reps).filter(x=>x>0); return `<p class="small rope-live" data-rope="${ei}" style="margin:8px 0 0">${v.length?`Best <b>${Math.max(...v)}</b> · Average <b>${r1(v.reduce((a,b)=>a+b,0)/v.length)}</b>`:"Best and average appear as you enter each set."}</p>`; })() : ""}
     <button class="linkbtn" style="margin-top:8px" data-act="addset" data-ex="${ei}">+ Add set</button>`}</div>`; }).join("");
   const libHTML = wd.cat==="practice" ? practiceBrowserHTML() : wd.sections.length ? `
@@ -2783,7 +2834,7 @@ function saveWkInner(){
   const keep = s => Object.values(s).some(v => num(v) && +v > 0);
   const w = {id: wd.id || uid(), cat: wd.cat || "training", type:wd.type, time: wd.time || "", program: wd.program || null, warmup: wd.warmup || [], sections:wd.sections, title:(wd.title||"").trim() || wd.sections.map(secName).join(" + "), dur:+wd.dur||0, rpe:+wd.rpe||0, quality: wd.cat==="practice" && wd.quality ? +wd.quality : null, kcal:+wd.kcal||0, dist:+wd.dist||0, notes:wd.notes||"",
     exercises: wd.exercises.filter(e => e.name && !(/\(your choice\)/.test(e.name) && !e.sets.some(keep))).map(e => ({exId:e.exId||null, name:e.name, section:e.section||null, measure:e.measure||"load", target:e.target||null, url:e.url||null,
-      sets: e.measure==="swinglog" ? e.sets.filter(s => s.type).map(s => ({type:s.type, speed: num(s.speed)&&s.speed!=="" ? +s.speed : null, ev: num(s.ev)&&s.ev!=="" ? +s.ev : null})) : e.measure==="pitchlog" ? e.sets.filter(s => s.type).map(s => ({type:s.type, exec: s.exec ? 1 : 0, velo: hasVelo(s) ? +s.velo : null})) : e.sets.filter(keep).map(s => Object.fromEntries(Object.entries(s).map(([k,v]) => [k, num(v) ? +v : 0])))}))};
+      sets: e.measure==="swinglog" ? e.sets.filter(s => s.type).map(s => ({type:s.type, speed: num(s.speed)&&s.speed!=="" ? +s.speed : null, ev: num(s.ev)&&s.ev!=="" ? +s.ev : null})) : e.measure==="pitchlog" ? e.sets.filter(s => s.type).map(s => ({type:s.type, exec: s.exec ? 1 : 0, velo: hasVelo(s) ? +s.velo : null})) : e.sets.filter(keep).map(s => Object.fromEntries(Object.entries(s).map(([k,v]) => [k, (k==="band" || k==="type") ? (v||"") : num(v) ? +v : 0])))}))};
   markPlanDone(wd.planId);
   const target = wd.date || cur;
   if(target !== cur && wd.editing) editDay(cur, d => { d.workouts = d.workouts.filter(x => x.id!==w.id); });
@@ -2796,7 +2847,7 @@ let toastT;
 function toast(m){ let t = $("#toast"); if(!t){ t = document.createElement("div"); t.id = "toast"; t.className = "toast"; t.setAttribute("role","status"); t.setAttribute("aria-live","polite"); } const dlg = [...document.querySelectorAll("dialog[open]")].pop(); if(t.parentNode !== (dlg || document.body)) (dlg || document.body).appendChild(t); t.textContent = m; t.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove("show"), 2600); }
 
 document.addEventListener("click", e => {
-  const b = e.target.closest("[data-act]"); if(!b) return;
+  const b = e.target.closest("[data-act]"); if(!b) return; lastClickEl = b;
   const a = b.dataset.act, v = b.dataset.v;
   switch(a){
     case "tab": tab = v; render(); window.scrollTo({top:0}); break;
@@ -2820,7 +2871,7 @@ document.addEventListener("click", e => {
     case "plansec": { const i = pd.sections.indexOf(v); if(i>=0) pd.sections.splice(i,1); else pd.sections.push(v); keepScroll("#planDlg", renderPlanDlg); break; }
     case "saveplan": try { savePlan(); } catch(err){ console.error(err); toast("Couldn't add to calendar: " + ((err && err.message) || err)); } break;
     case "delplan": { const id = pd.id; closeDlg($("#planDlg")); editDay(cur, d => d.plan = (d.plan||[]).filter(x => x.id!==id)); toast("Removed from calendar"); break; }
-    case "planpick": { const k = b.dataset.key, f = allFoods().find(x => (x.mine ? "m:"+x.id : "b:"+x.idx) === k); if(f){ pd.items.push(f.mine ? {name:f.name, per:f.per, serv:true, rest:!!f.rest, qty:1} : {name:f.name, per:f.per, serv:false, unit:f.unit, ug:f.ug, inUnits:true, qty:1}); pd.q = ""; keepScroll("#planDlg", renderPlanDlg); toast(`Added ${f.name}`); } break; }
+    case "planpick": { const k = b.dataset.key, f = allFoods().find(x => (x.mine ? "m:"+x.id : "b:"+x.idx) === k); if(f){ pd.items.push(f.mine ? {name:f.name, per:f.per, serv:true, rest:!!f.rest, qty:1} : {name:f.name, per:f.per, serv:false, unit:f.unit, ug:f.ug, inUnits:true, qty:1}); keepScroll("#planDlg", renderPlanDlg); toast(`Added ${f.name}`); } break; }
     case "planex": { const i = pd.exIds.indexOf(v); if(i>=0) pd.exIds.splice(i,1); else pd.exIds.push(v); keepScroll("#planDlg", renderPlanDlg); break; }
     case "plantool": { const i = pd.tools.findIndex(t => t.id===v); if(i>=0) pd.tools.splice(i,1); else { const t = state.profile.tools.find(x => x.id===v); if(t) pd.tools.push({id:t.id, name:t.name, unit:t.unit, amt: num(t.amt)?+t.amt:null, hasTemp:!!t.temp}); } keepScroll("#planDlg", renderPlanDlg); break; }
     case "planunit": { const it = pd.items[+v]; if(it){ const q = +it.qty || 0; it.qty = it.inUnits ? r0(q * it.ug) : r1(q / it.ug) || 1; it.inUnits = !it.inUnits; keepScroll("#planDlg", renderPlanDlg); } break; }
@@ -2862,7 +2913,7 @@ document.addEventListener("click", e => {
     case "pickfood": {
       const k = b.dataset.key, f = allFoods().find(x => (x.mine ? "m:"+x.id : "b:"+x.idx) === k);
       fd.sel = {key:k, food:f}; fd.unitMode = f.mine ? "g" : "u"; fd.qty = 1;
-      renderFoodDlg(); const q = $("#foodQty"); if(q){ q.focus(); q.select(); } break;
+      keepScroll("#foodDlg", renderFoodDlg); const q = $("#foodQty"); if(q){ q.focus({preventScroll:true}); q.select(); } break;
     }
     case "unitmode": { const f = fd.sel.food; if(fd.unitMode!==v){ fd.qty = v==="g" ? r0((+fd.qty||1)*f.ug) : r1((+fd.qty||100)/f.ug) || 1; fd.unitMode = v; } renderFoodDlg(); break; }
     case "savefood": saveFood(); break;
@@ -2974,6 +3025,7 @@ document.addEventListener("input", e => {
   if(t.dataset.ex !== undefined && t.dataset.set !== undefined && wd.exercises[+t.dataset.ex] && wd.exercises[+t.dataset.ex].measure==="rope"){
     const ex = wd.exercises[+t.dataset.ex]; ex.sets[+t.dataset.set][t.dataset.f] = t.value; const v = ex.sets.map(s=>+s.reps).filter(x=>x>0), el = document.querySelector(`[data-rope="${t.dataset.ex}"]`);
     if(el) el.innerHTML = v.length ? `Best <b>${Math.max(...v)}</b> · Average <b>${r1(v.reduce((a,b)=>a+b,0)/v.length)}</b>` : "Best and average appear as you enter each set."; return; }
+  if(t.classList && t.classList.contains("band-sel")) t.style.setProperty("--bc", bandHex(t.value));
   if(t.dataset.ex !== undefined){ const ex = wd.exercises[+t.dataset.ex]; if(t.dataset.set !== undefined) ex.sets[+t.dataset.set][t.dataset.f] = t.value; else ex[t.dataset.f] = t.value; return; }
   if(t.dataset.rec){
     const f = t.dataset.rec;
@@ -2992,9 +3044,9 @@ document.addEventListener("input", e => {
 document.addEventListener("change", e => {
   const t = e.target;
   if(t.id === "datepick" && t.value){ cur = t.value; render(); return; }
-  if(t.id === "fdMeal"){ fd.meal = t.value; if(cur !== todayStr() || fd.meal === "preworkout") fd.time = defaultTimeFor(fd.meal); renderFoodDlg(); return; }
+  if(t.id === "fdMeal"){ fd.meal = t.value; if(cur !== todayStr() || ["preworkout","postworkout","postpractice"].includes(fd.meal)) fd.time = defaultTimeFor(fd.meal); renderFoodDlg(); return; }
   if(t.id === "fdTime"){ fd.time = t.value; return; }
-  if(t.dataset.pf){ pd[t.dataset.pf] = t.value; if(t.dataset.pf==="meal" && !pd.editing) { pd.time = t.value==="preworkout" ? preWorkoutTime(pd.date||cur) : MEAL_TIME[t.value]; renderPlanDlg(); } return; }
+  if(t.dataset.pf){ pd[t.dataset.pf] = t.value; if(t.dataset.pf==="meal" && !pd.editing) { pd.time = t.value==="preworkout" ? preWorkoutTime(pd.date||cur) : (t.value==="postworkout" || t.value==="postpractice") ? postMealTime(pd.date||cur, t.value) : MEAL_TIME[t.value]; renderPlanDlg(); } return; }
   if(t.dataset.sf === "showN"){ sd.showN = t.checked; renderSuppDlg(); return; }
   if(t.dataset.tf === "temp"){ tdlg.temp = t.checked; return; }
   if(t.dataset.tf === "logNow"){ tdlg.logNow = t.checked; return; }
@@ -3027,7 +3079,25 @@ async function resetAll(){
   toast("All data deleted");
 }
 
-function keepScroll(sel, fn){ const dd = $(sel), sc = () => dd ? (dd.querySelector(".dlg-body") || dd) : null, y = sc() ? sc().scrollTop : 0, d = dd, lists = d ? [...d.querySelectorAll(".lib-list")].map(x=>x.scrollTop) : []; fn(); if(d){ sc().scrollTop = y; d.querySelectorAll(".lib-list").forEach((x,i)=>{ if(lists[i]!==undefined) x.scrollTop = lists[i]; }); } }
+let lastClickEl = null;
+function anchorFor(el){
+  if(!el) return null;
+  for(const a of ["ex","key","v","id"]){ const v = el.dataset && el.dataset[a]; if(v !== undefined){ const scope = el.closest(".lib-list, .results, .tool-grid, .chips, .plan-items"); return {attr:a, val:v, scope: scope ? [...scope.classList].map(c => "." + c).join("") : null}; } }
+  return null;
+}
+function findAnchor(d, an){
+  const q = `[data-${an.attr}="${CSS.escape(an.val)}"]`, list = [...d.querySelectorAll((an.scope ? an.scope + " " : "") + q)];
+  return list.find(n => !n.closest(".ex-box")) || list[0] || null;
+}
+function keepScroll(sel, fn){
+  const d = $(sel); if(!d){ fn(); return; }
+  const sels = [".dlg-body", ".lib-list", ".results", ".pl-list", ".plan-items"];
+  const saved = sels.map(x => [...d.querySelectorAll(x)].map(n => n.scrollTop));
+  const an = lastClickEl && d.contains(lastClickEl) ? anchorFor(lastClickEl) : null, before = an ? lastClickEl.getBoundingClientRect().top : null;
+  fn();
+  sels.forEach((x,i) => d.querySelectorAll(x).forEach((n,j) => { if(saved[i][j] !== undefined) n.scrollTop = saved[i][j]; }));
+  if(an){ const n = findAnchor(d, an), body = d.querySelector(".dlg-body"); if(n && body){ const delta = n.getBoundingClientRect().top - before; if(Math.abs(delta) > 1) body.scrollTop += delta; } }
+}
 /* ---------- Dialog helpers (with fallback for older iOS) ---------- */
 function openDlg(d){
   if(typeof d.showModal === "function"){ try { d.showModal(); return; } catch(e){} }
@@ -3074,8 +3144,8 @@ setAppH(); window.addEventListener("resize", setAppH); if(window.visualViewport)
 /* ==========================================================================
    SUPABASE SETUP — paste your project's values here (Settings → API)
    ========================================================================== */
-const SUPABASE_URL = "https://vcurpxoxyvzokyyoeeir.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nyto9VAlT4hsQ5SLkX7zPQ_zW5YrFQO";
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const VIDEO_BUCKET = "exercise-videos";
 /* ========================================================================== */
 
@@ -3129,18 +3199,36 @@ function installClaudeShim(){
 }
 
 /* ---------- Sign in / sign up screen ---------- */
+let authMode = "signin"; // signin | forgot | forgotuser | newpass
 function authHTML(msg, err){
-  return `<div class="auth-card">
-    <div class="brand" style="font-size:34px">Split</div>
-    <p class="muted small" style="margin:4px 0 18px">Training, fuel and recovery</p>
-    ${sbReady() ? `
+  const note = msg ? `<p class="small" style="margin-top:14px;color:${err?"var(--warn)":"var(--good)"}">${esc(msg)}</p>` : "";
+  const head = `<div class="brand" style="font-size:34px">Split</div><p class="muted small" style="margin:4px 0 18px">Training, fuel and recovery</p>`;
+  if(!sbReady()) return `<div class="auth-card">${head}<p class="small" style="color:var(--warn)">Supabase isn't set up yet. Open index.html and paste your Project URL and anon key into the SUPABASE SETUP block near the top of the script, then reload.</p></div>`;
+  if(authMode === "forgot") return `<div class="auth-card">${head}
+    <h3>Reset your password</h3><p class="small muted" style="margin-top:-4px">Enter the email you signed up with. We'll send a link to choose a new password.</p>
+    <label class="f">Email<input class="i" id="authEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
+    <button class="btn" data-auth="sendreset" style="width:100%;justify-content:center">Send reset link</button>
+    <button class="linkbtn" data-auth="back" style="margin-top:14px">← Back to sign in</button>${note}</div>`;
+  if(authMode === "forgotuser") return `<div class="auth-card">${head}
+    <h3>Forgot which email you used?</h3>
+    <p class="small">Your sign-in name is your email address. To find it:</p>
+    <ul class="small" style="padding-left:18px;margin:0 0 12px">
+      <li>Search your inboxes for an email from <b>Supabase</b> or <b>Split</b>, such as "Confirm your signup". That's the address on your account.</li>
+      <li>Try signing in with each email you use. Wrong ones just show "Invalid login credentials".</li>
+      <li>Still stuck? Ask whoever set Split up for you to look you up in Supabase under Authentication → Users.</li>
+    </ul>
+    <button class="linkbtn" data-auth="back">← Back to sign in</button>${note}</div>`;
+  if(authMode === "newpass") return `<div class="auth-card">${head}
+    <h3>Choose a new password</h3>
+    <label class="f">New password<input class="i" id="authNew1" type="password" autocomplete="new-password" placeholder="At least 6 characters"></label>
+    <label class="f">Confirm new password<input class="i" id="authNew2" type="password" autocomplete="new-password"></label>
+    <button class="btn" data-auth="savepass" style="width:100%;justify-content:center">Save password and sign in</button>${note}</div>`;
+  return `<div class="auth-card">${head}
     <label class="f">Email<input class="i" id="authEmail" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com"></label>
     <label class="f">Password<input class="i" id="authPass" type="password" autocomplete="current-password" placeholder="At least 6 characters"></label>
     <div class="actions" style="margin-top:4px"><button class="btn" data-auth="signin" style="flex:1;justify-content:center">Sign in</button><button class="btn ghost" data-auth="signup" style="flex:1;justify-content:center">Create account</button></div>
-    <button class="linkbtn" data-auth="magic" style="margin-top:14px">Email me a sign-in link instead</button>
-    ${msg ? `<p class="small" style="margin-top:14px;color:${err?"var(--warn)":"var(--good)"}">${esc(msg)}</p>` : ""}`
-    : `<p class="small" style="color:var(--warn)">Supabase isn't set up yet. Open index.html and paste your Project URL and anon key into the SUPABASE SETUP block near the top of the script, then reload.</p>`}
-  </div>`;
+    <div class="auth-links"><button class="linkbtn" data-auth="forgot">Forgot password?</button><button class="linkbtn" data-auth="forgotuser">Forgot email?</button></div>
+    <button class="linkbtn" data-auth="magic" style="margin-top:10px">Email me a sign-in link instead</button>${note}</div>`;
 }
 function showAuth(msg, err){
   document.body.classList.add("signed-out");
@@ -3149,27 +3237,46 @@ function showAuth(msg, err){
   el.innerHTML = authHTML(msg, err);
   if($("#authEmail")) $("#authEmail").value = keepE; if($("#authPass")) $("#authPass").value = keepP;
 }
+const backHere = () => location.origin + location.pathname;
 async function authAction(kind){
+  if(kind === "forgot" || kind === "forgotuser"){ authMode = kind; return showAuth(); }
+  if(kind === "back"){ authMode = "signin"; return showAuth(); }
+  if(kind === "savepass"){
+    const a = ($("#authNew1")||{}).value || "", b = ($("#authNew2")||{}).value || "";
+    if(a.length < 6) return showAuth("Use a password of at least 6 characters.", true);
+    if(a !== b) return showAuth("The two passwords don't match.", true);
+    try { const { error } = await SB.auth.updateUser({ password: a }); if(error) throw error;
+      authMode = "signin"; history.replaceState(null, "", backHere()); toast("Password updated"); startApp();
+    } catch(e){ showAuth(e.message || String(e), true); }
+    return;
+  }
   const email = ($("#authEmail")||{}).value?.trim(), pass = ($("#authPass")||{}).value || "";
   if(!email) return showAuth("Enter your email.", true);
   try {
-    if(kind === "signin"){
+    if(kind === "sendreset"){
+      const { error } = await SB.auth.resetPasswordForEmail(email, { redirectTo: backHere() });
+      if(error) throw error;
+      showAuth("If that email has an account, a reset link is on its way. Check your inbox and spam folder.");
+    } else if(kind === "signin"){
       const { error } = await SB.auth.signInWithPassword({ email, password: pass });
       if(error) throw error;
     } else if(kind === "signup"){
       if(pass.length < 6) return showAuth("Use a password of at least 6 characters.", true);
-      const { data, error } = await SB.auth.signUp({ email, password: pass, options: { emailRedirectTo: location.origin + location.pathname } });
+      const { data, error } = await SB.auth.signUp({ email, password: pass, options: { emailRedirectTo: backHere() } });
       if(error) throw error;
       if(!data.session) showAuth("Account created. Check your email to confirm it, then sign in.");
     } else {
-      const { error } = await SB.auth.signInWithOtp({ email, options: { emailRedirectTo: location.origin + location.pathname } });
+      const { error } = await SB.auth.signInWithOtp({ email, options: { emailRedirectTo: backHere() } });
       if(error) throw error;
       showAuth("Check your email for a sign-in link.");
     }
   } catch(e){ showAuth(e.message || String(e), true); }
 }
 document.addEventListener("click", e => { const b = e.target.closest("[data-auth]"); if(b) authAction(b.dataset.auth); });
-document.addEventListener("keydown", e => { if(e.key === "Enter" && (e.target.id === "authPass" || e.target.id === "authEmail")) authAction("signin"); });
+document.addEventListener("keydown", e => { if(e.key !== "Enter") return; const id = e.target.id;
+  if(id === "authPass" || (id === "authEmail" && authMode === "signin")) authAction("signin");
+  else if(id === "authEmail" && authMode === "forgot") authAction("sendreset");
+  else if(id === "authNew1" || id === "authNew2") authAction("savepass"); });
 
 /* ---------- Export / import (move data between devices or from the Claude version) ---------- */
 function exportData(){
@@ -3282,14 +3389,18 @@ function startApp(){
 }
 async function boot(){
   if(!sbReady()){ showAuth(); return; }
+  const recovering = /type=recovery/.test(location.hash) || /type=recovery/.test(location.search);
   SB = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
   const { data } = await SB.auth.getSession();
   SESSION = data.session;
   SB.auth.onAuthStateChange((event, session) => {
     SESSION = session; if(session) renderAcctBtn();
+    if(event === "PASSWORD_RECOVERY"){ authMode = "newpass"; showAuth(); return; }
+    if(authMode === "newpass") return;
     if(session && !appStarted) startApp();
     if(event === "SIGNED_OUT") location.reload();
   });
+  if(recovering && SESSION){ authMode = "newpass"; showAuth(); return; }
   if(SESSION) startApp(); else showAuth();
 }
 boot();
