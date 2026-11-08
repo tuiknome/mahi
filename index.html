@@ -310,7 +310,7 @@ a.btn{text-decoration:none}
 .cal-day.sel .w,.cal-day.sel.today .n{color:var(--bg)}
 .cal-day .dots{display:flex;gap:3px;height:6px}
 .cal-day .dots i,.cal-legend i{display:inline-block;width:6px;height:6px;border-radius:50%}
-.dm{background:var(--carbs)} .dw{background:var(--protein)} .dp{border:1.5px solid var(--muted);width:6px;height:6px;box-sizing:border-box}
+.dm{background:var(--carbs)} .dr{background:var(--recover)} .dw{background:var(--protein)} .dp{border:1.5px solid var(--muted);width:6px;height:6px;box-sizing:border-box}
 .cal-day.sel .dp{border-color:var(--bg)}
 .cal-legend{display:flex;gap:14px;margin-top:8px;font-size:12px;color:var(--muted)}
 .cal-legend i{margin-right:5px;vertical-align:1px}
@@ -436,6 +436,10 @@ button.acct-big{position:relative;border:0;cursor:pointer;padding:0;width:64px;h
 select.band-sel{border-left:8px solid var(--bc, var(--line));padding-left:8px}
 #wkDlg input[type=date].i, #wkDlg input[type=time].i, #planDlg input[type=date].i, #planDlg input[type=time].i, #dupDlg input[type=date].i{text-align:center}
 #wkDlg input[type=date].i::-webkit-date-and-time-value, #wkDlg input[type=time].i::-webkit-date-and-time-value, #planDlg input[type=date].i::-webkit-date-and-time-value, #planDlg input[type=time].i::-webkit-date-and-time-value, #dupDlg input[type=date].i::-webkit-date-and-time-value{text-align:center}
+.gcal-btn{text-decoration:none;margin:-4px 0 14px;display:inline-flex}
+.tool-tile.logged{border-color:var(--recover);background:color-mix(in srgb,var(--recover) 18%,var(--surface))}
+.tool-logged{display:block;font-size:11px;font-weight:600;color:var(--recover)}
+.ag-row.tool .ag-bar{background:var(--recover)}
 .stack-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
 /* Title Case for titles and names */
 h2,h3,h4,.wk-title{text-transform:capitalize}
@@ -495,6 +499,7 @@ h2,h3,h4,.wk-title{text-transform:capitalize}
 <dialog id="wkDlg"></dialog>
 <dialog id="suppDlg"></dialog>
 <dialog id="toolDlg"></dialog>
+<dialog id="toolLogDlg"></dialog>
 <dialog id="vidDlg"></dialog>
 <dialog id="planDlg"></dialog>
 <dialog id="retestDlg"></dialog>
@@ -522,7 +527,7 @@ const FOODS = [
  ["Egg white",52,10.9,0.7,0.2,0,0.7,166,163,7,0.1,0,"large white",33],
  ["Greek yogurt, nonfat plain",59,10.2,3.6,0.4,0,3.2,36,141,110,0.1,0,"cup (245 g)",245],
  ["Cottage cheese 2%",84,11,4.3,2.3,0,4,308,125,111,0.2,0,"cup (226 g)",226],
- ["Milk 2%",50,3.3,4.8,2,0,5.1,47,140,120,0,0,"cup (244 g)",244],
+ ["Milk 2%",50,3.3,4.8,2,0,5.1,47,140,120,0,0,"8 oz (244 g)",244],
  ["Cheddar cheese",403,25,1.3,33,0,0.5,621,76,710,0.7,0,"slice (28 g)",28],
  ["Whey protein powder",400,80,8,6,0,4,250,500,500,1,0,"scoop (30 g)",30],
  ["Tofu, firm",144,17,2.8,8.7,2.3,0.6,14,237,683,2.7,0,"block ¼ (100 g)",100],
@@ -543,7 +548,7 @@ const FOODS = [
  ["Premier Protein Pancake & Waffle Mix (dry)",369,23.1,60,3.08,1.54,9.23,1062,102,215,1.54,0,"½ cup dry mix (65 g)",65],
  ["Goolsby's Premium Country Sausage Patty",400,13.33,0,37.8,0,0,600,0,0,1.6,0,"patty (45 g)",45],
  ["Kirkland Grass-Fed Butter (salted)",714,0,0,78.6,0,0,536,0,0,0,0,"tbsp (14 g)",14],
- ["Kroger 1% Lowfat Milk",45.8,3.33,5.42,1.04,0,5,52,162.5,125,0,0,"cup (240 ml)",240],
+ ["Kroger 1% Lowfat Milk",45.8,3.33,5.42,1.04,0,5,52,162.5,125,0,0,"8 oz (240 ml)",240],
  ["Flour tortilla",312,8.3,51.6,8,3.4,3.4,650,150,120,3.3,0,"8-inch (49 g)",49],
  ["Granola",471,10,64,20,7,24,25,400,60,3,0,"½ cup (60 g)",60],
  ["Sweet potato, baked",90,2,20.7,0.2,3.3,6.5,36,475,38,0.7,19.6,"medium (114 g)",114],
@@ -781,6 +786,11 @@ function agenda(d){
   day.meals.forEach(m => { const k = m.meal + "|" + mealTime(m); (groups[k] ||= {meal:m.meal, time:mealTime(m), items:[]}).items.push(m); });
   Object.values(groups).forEach(g => { const n = g.items.reduce((a,m)=>{ NK.forEach(k=>a[k]=(a[k]||0)+(+m.n[k]||0)); return a; },{});
     items.push({kind:"meal", t:toMin(g.time), meal:g.meal, title: MEALS.find(x=>x[0]===g.meal)[1], sub: g.items.map(m=>m.name).join(", "), n}); });
+  (() => { const groups = {};
+    Object.values(day.tools||{}).filter(x => x.time).forEach(x => (groups[x.time] = groups[x.time] || []).push(x));
+    Object.entries(groups).forEach(([time, list]) => items.push({kind:"tool", t: toMin(time), time, title: "Recovery",
+      sub: list.map(x => `${x.name}${num(x.amt) && +x.amt ? ` ${r1(x.amt)} ${x.unit==="session"?"session":x.unit}` : ""}${num(x.temp) ? ` @ ${x.temp}${tempU()}` : ""}`).join(" · "),
+      dur: list.reduce((a,x) => a + (x.unit==="min" && num(x.amt) ? +x.amt : x.unit==="h" && num(x.amt) ? +x.amt*60 : 0), 0)})); })();
   day.workouts.forEach(w => items.push({kind:"workout", t: toMin(w.time), id:w.id, title: w.title || w.type, sub: `${r0(w.dur)} min${w.cat==="practice" ? (w.quality ? ` · Quality ${w.quality}` : "") : ` · RPE ${w.rpe}`}${(w.exercises||[]).length?` · ${w.exercises.length} ${w.cat==="practice"?"drills":"exercises"}`:""}`, dur:+w.dur||0}));
   (day.plan||[]).filter(p => !p.done).forEach(p => items.push({kind:"plan", pk:p.kind, t:toMin(p.time), id:p.id, title: p.kind==="recovery" ? "Recovery" : p.kind==="meal" ? `${MEALS.find(x=>x[0]===p.meal)[1]}${p.note?` · ${p.note}`:""}` : (p.title || (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice" ? "Practice" : "Workout")), sub: p.kind==="recovery" ? `Planned · ${(p.tools||[]).map(t=>t.name).join(", ")||"Recovery"}` : p.kind!=="meal" && (p.exIds||[]).length ? `${p.dur ? p.dur+" min · " : ""}${p.exIds.length} ${p.kind==="practice"?"drills":"exercises"} planned` : p.kind==="meal" && (p.items||[]).length ? `Planned · ${r0(p.items.reduce((a,it)=>a+(+(it.n||{}).kcal||0),0))} kcal — ${p.items.map(it=>it.name).join(", ")}` : p.kind!=="meal" && p.dur ? `${p.dur} min planned` : "Planned", dur:+p.dur||0}));
   const pk = progDayFor(d);
@@ -806,7 +816,7 @@ function timingInsights(d){
 function dayDots(d){
   const day = state.days[d] || emptyDay();
   const pk = progDayFor(d), pend = (day.plan||[]).some(p => !p.done) || (pk && !progDone(d, pk));
-  return `${day.meals.length?'<i class="dm"></i>':""}${day.workouts.length?'<i class="dw"></i>':""}${pend?'<i class="dp"></i>':""}`;
+  return `${day.meals.length?'<i class="dm"></i>':""}${day.workouts.length?'<i class="dw"></i>':""}${Object.keys(day.tools||{}).length?'<i class="dr"></i>':""}${pend?'<i class="dp"></i>':""}`;
 }
 function calendarPanelHTML(){
   const base = parse(cur), today = todayStr();
@@ -826,7 +836,7 @@ function calendarPanelHTML(){
   const rows = items.map(it => {
     let pre = ""; if(!nowDrawn && it.t !== null && it.t > nowM){ nowDrawn = true; pre = `<div class="ag-now"><span>${fmtTime(nowM)}</span></div>`; }
     const cls = it.kind==="plan" ? `plan ${it.pk}` : it.kind;
-    const act = it.kind==="meal" ? `data-act="tab" data-v="food"` : it.kind==="workout" ? `data-act="editwk" data-id="${it.id}"` : it.prog ? `data-act="startprog" data-v="${it.prog}"` : `data-act="editplan" data-id="${it.id}"`;
+    const act = it.kind==="tool" ? `data-act="recview" data-v="${esc(it.time)}"` : it.kind==="meal" ? `data-act="tab" data-v="food"` : it.kind==="workout" ? `data-act="editwk" data-id="${it.id}"` : it.prog ? `data-act="startprog" data-v="${it.prog}"` : `data-act="editplan" data-id="${it.id}"`;
     return `${pre}<button class="ag-row ${cls}" ${act}><span class="ag-t">${it.t!==null?fmtTime(it.t):"—"}${it.dur?`<small>${fmtTime(it.t+it.dur)}</small>`:""}</span>
       <span class="ag-bar"></span><span class="ag-body"><b>${esc(it.title)}</b><small>${it.kind==="meal"?`${r0(it.n.kcal)} kcal · P ${r0(it.n.p)} · C ${r0(it.n.c)} · F ${r0(it.n.f)} — ${esc(it.sub)}`:esc(it.sub)}</small></span>
       ${it.kind==="plan"?`<span class="ag-tag">${it.prog?"Program":"Planned"}</span>`:""}</button>`;
@@ -834,11 +844,11 @@ function calendarPanelHTML(){
   const ins = timingInsights(cur);
   const label = calView==="week" ? (() => { const s = addDays(cur,-base.getDay()), e = addDays(s,6); return `${parse(s).toLocaleDateString(undefined,{month:"short",day:"numeric"})} – ${parse(e).toLocaleDateString(undefined,{month:"short",day:"numeric"})}`; })() : base.toLocaleDateString(undefined,{month:"long",year:"numeric"});
   return `<div class="sec-head"><h2>Calendar</h2>
-      <div class="actions"><div class="range"><button aria-pressed="${calView==="week"}" data-act="calview" data-v="week">Week</button><button aria-pressed="${calView==="month"}" data-act="calview" data-v="month">Month</button></div>
+      <div class="actions"><button class="btn ghost sm" data-sb="ics" title="Export upcoming plans to Google Calendar">📅 Export</button><div class="range"><button aria-pressed="${calView==="week"}" data-act="calview" data-v="week">Week</button><button aria-pressed="${calView==="month"}" data-act="calview" data-v="month">Month</button></div>
       </div></div>
     <div class="cal-nav"><button class="iconbtn" data-act="calshift" data-v="-1" aria-label="Previous">‹</button><span>${label}</span><button class="iconbtn" data-act="calshift" data-v="1" aria-label="Next">›</button></div>
     ${grid}
-    <div class="cal-legend"><span><i class="dm"></i>Meals</span><span><i class="dw"></i>Workouts</span><span><i class="dp"></i>Planned</span></div>
+    <div class="cal-legend"><span><i class="dm"></i>Meals</span><span><i class="dw"></i>Workouts</span><span><i class="dr"></i>Recovery</span><span><i class="dp"></i>Planned</span></div>
     <h3 style="margin-top:16px">${cur===today?"Today":parse(cur).toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})}</h3>
     ${items.length ? `<div class="agenda">${rows}</div>` : `<p class="empty-note">Nothing logged or planned. Tap Plan to schedule a meal or workout.</p>`}
     ${ins.length ? `<div class="insights">${ins.map(x=>`<span>${x}</span>`).join("")}</div>` : ""}`;
@@ -857,10 +867,10 @@ function planItemN(it){ const q = +it.qty || 0, mult = it.serv ? q : (it.inUnits
 function planItemLabel(it){ const q = +it.qty || 0; return it.serv ? `${q} ${it.rest ? "× item" : `serving${q!==1?"s":""}`}` : it.inUnits ? `${q} × ${it.unit}` : `${q} g`; }
 function planFoodResultsHTML(){
   const q = (pd.q||"").trim().toLowerCase(); if(!q) return `<div class="res" style="cursor:default"><small>Type to search all foods, restaurant items and your saved foods.</small></div>`;
-  const list = allFoods().filter(f => f.name.toLowerCase().includes(q)).slice(0, 30);
+  const list = byUse(allFoods().filter(f => f.name.toLowerCase().includes(q))).slice(0, 30);
   if(!list.length) return `<div class="res" style="cursor:default"><small>No match.</small></div>`;
   return list.map(f => { const key = f.mine ? "m:"+f.id : "b:"+f.idx;
-    return `<button class="res" data-act="planpick" data-key="${esc(key)}"><span>${esc(f.name)}<br><small>${f.rest?"per item":f.mine?"per serving":esc(f.unit)}</small></span><span class="macros">${r0(f.mine ? f.per.kcal : f.per.kcal*f.ug/100)} kcal<br>+ Add</span></button>`; }).join("");
+    return `<button class="res" data-act="planpick" data-key="${esc(key)}"><span>${esc(f.name)}<br><small>${usedTag(f)}${f.rest?"per item":f.mine?"per serving":esc(f.unit)}</small></span><span class="macros">${r0(f.mine ? f.per.kcal : f.per.kcal*f.ug/100)} kcal<br>+ Add</span></button>`; }).join("");
 }
 function planTotalsHTML(){ const t = Object.fromEntries(NK.map(k=>[k,0])); (pd.items||[]).forEach(it => { const n = planItemN(it); NK.forEach(k => t[k] += n[k]); });
   return `<b>${r0(t.kcal)} kcal</b> · P ${r0(t.p)} · C ${r0(t.c)} · F ${r0(t.f)}`; }
@@ -908,6 +918,41 @@ function openPlanView(id){
   }
   openPlan(id); pd.view = "record"; renderPlanDlg();
 }
+/* Google Calendar: one-tap "add event" links for planned items */
+function gcalURL(title, date, hm, mins, details){
+  const pad = n => String(n).padStart(2, "0"), st = toMin(hm || "12:00") ?? 720, d0 = parse(date);
+  const s = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), Math.floor(st/60), st%60), e = new Date(s.getTime() + Math.max(15, mins || 30) * 60000);
+  const f = x => `${x.getFullYear()}${pad(x.getMonth()+1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+  const tz = (Intl.DateTimeFormat().resolvedOptions() || {}).timeZone || "";
+  return "https://calendar.google.com/calendar/render?" + new URLSearchParams({ action:"TEMPLATE", text:title, dates: f(s) + "/" + f(e), details: (details ? details + "\n\n" : "") + "Planned in Split", ...(tz ? {ctz:tz} : {}) }).toString();
+}
+function gcalBtn(url){ return `<a class="btn btn-blue sm gcal-btn" href="${esc(url)}" target="_blank" rel="noopener">📅 Add to Google Calendar</a>`; }
+function planGcalURL(){
+  const isMeal = pd.kind === "meal", title = isMeal ? MEALS.find(x => x[0]===pd.meal)[1] + (pd.note ? " · " + pd.note : "") : "Recovery";
+  const details = isMeal ? (pd.items||[]).map(it => `• ${it.name} (${planItemLabel(it)})`).join("\n") : (pd.tools||[]).map(t => `• ${t.name}${num(t.amt) && +t.amt ? ` ${t.amt} ${t.unit}` : ""}`).join("\n");
+  const mins = isMeal ? 30 : Math.max(15, (pd.tools||[]).reduce((a,t) => a + (t.unit==="min" && num(t.amt) ? +t.amt : t.unit==="h" && num(t.amt) ? +t.amt*60 : 0), 0));
+  return gcalURL(title, pd.date || cur, pd.time, mins, details);
+}
+/* Export every upcoming plan as a calendar file (.ics) that Google Calendar, Apple Calendar or Outlook can import */
+function exportICS(){
+  const pad = n => String(n).padStart(2, "0"), today = todayStr(), lines = ["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Split//Plans//EN","CALSCALE:GREGORIAN"];
+  const esc2 = t => String(t||"").replace(/\\/g,"\\\\").replace(/\n/g,"\\n").replace(/([,;])/g,"\\$1");
+  const stamp = new Date().toISOString().replace(/[-:]/g,"").replace(/\.\d+/,"");
+  let n = 0;
+  Object.keys(state.days).filter(d => d >= today).sort().forEach(d => (getDay(d).plan||[]).filter(p => !p.done).forEach(p => {
+    const st = toMin(p.time || "12:00") ?? 720, d0 = parse(d), s = new Date(d0.getFullYear(), d0.getMonth(), d0.getDate(), Math.floor(st/60), st%60);
+    const mins = p.kind==="meal" ? 30 : p.kind==="recovery" ? 30 : (+p.dur || 60), e = new Date(s.getTime() + mins*60000);
+    const f = x => `${x.getFullYear()}${pad(x.getMonth()+1)}${pad(x.getDate())}T${pad(x.getHours())}${pad(x.getMinutes())}00`;
+    const title = p.kind==="meal" ? MEALS.find(x => x[0]===p.meal)[1] + (p.note ? " · " + p.note : "") : p.kind==="recovery" ? "Recovery" : (p.title || (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice" ? "Practice" : "Workout"));
+    const details = p.kind==="meal" ? (p.items||[]).map(it => "• " + it.name).join("\n") : p.kind==="recovery" ? (p.tools||[]).map(t => "• " + t.name).join("\n") : (p.exIds||[]).map(findEx).filter(Boolean).map(x => "• " + x.name).join("\n");
+    lines.push("BEGIN:VEVENT", `UID:${p.id}-${d}@split`, `DTSTAMP:${stamp}`, `DTSTART:${f(s)}`, `DTEND:${f(e)}`, `SUMMARY:${esc2(title)}`, `DESCRIPTION:${esc2((details ? details + "\n\n" : "") + "Planned in Split")}`, "END:VEVENT"); n++;
+  }));
+  lines.push("END:VCALENDAR");
+  if(!n) return toast("No upcoming plans to export. Use + Plan first.");
+  const blob = new Blob([lines.join("\r\n")], { type:"text/calendar" }), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = `split-plans-${today}.ics`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  toast(`Exported ${n} plan${n>1?"s":""}. Open the file to add them to your calendar.`);
+}
 function renderPlanRecord(){
   const isMeal = pd.kind==="meal", title = isMeal ? MEALS.find(x=>x[0]===pd.meal)[1] : "Recovery";
   const tools = pd.tools||[], items = pd.items||[];
@@ -917,6 +962,7 @@ function renderPlanRecord(){
   $("#planDlg").innerHTML = `<div class="dlg-head"><h2>${esc(title)}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
   <div class="dlg-body">
     <p class="small muted" style="margin:0 0 12px">Planned · ${esc(fmtShort(pd.date||cur))} · ${esc(fmtTime(pd.time))}${pd.note?` · ${esc(pd.note)}`:""}</p>
+    ${gcalBtn(planGcalURL())}
     ${body}
     ${(isMeal ? items.length : tools.length) ? `<p class="small muted" style="margin-top:10px">Change the amounts to what you actually ${isMeal?"had":"did"}, then tap Save.</p>` : ""}
   </div>
@@ -2107,6 +2153,55 @@ function ensureToolLibrary(){
     return !(p && !used.has(t.id) && p.unit === t.unit && +p.amt === +t.amt && !!p.temp === !!t.temp); });
   P.toolLibV3 = true; return true;
 }
+/* Most recent day (on or before the day you're viewing) each tool was used */
+function lastToolLog(id){
+  const days = Object.keys(state.days).filter(d => d <= cur).sort().reverse();
+  for(const d of days){ const x = (state.days[d].tools||{})[id]; if(x) return {d, time: x.time || ""}; }
+  return null;
+}
+let toolSel = [], tl = null;
+function openToolLog(){
+  const tools = state.profile.tools.filter(t => toolSel.includes(t.id));
+  tl = {date: cur, time: cur === todayStr() ? nowHM() : "17:00", items: tools.map(t => ({id:t.id, name:t.name, unit:t.unit, amt: num(t.amt) ? t.amt : "", temp:"", hasTemp: !!t.temp}))};
+  renderToolLog(); openDlg($("#toolLogDlg"));
+}
+function recEntries(time){ return Object.entries(getDay(cur).tools||{}).filter(([,x]) => (x.time || "") === (time || "")); }
+function openRecView(time){
+  const list = recEntries(time); if(!list.length) return;
+  const mins = list.reduce((a,[,x]) => a + (x.unit==="min" && num(x.amt) ? +x.amt : x.unit==="h" && num(x.amt) ? +x.amt*60 : 0), 0);
+  tl = {viewTime: time};
+  $("#toolLogDlg").innerHTML = `<div class="dlg-head"><h2>Recovery</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <p class="small muted" style="margin:0 0 12px">${esc(fmtShort(cur))} · ${esc(fmtTime(time))}${mins ? ` – ${esc(fmtTime(toMin(time) + mins))}` : ""}${mins ? ` · ${mins} min` : ""}</p>
+    <div class="view-list">${list.map(([,x]) => `<div class="view-ex"><b>${esc(x.name)}</b><span>${num(x.amt) && +x.amt ? `${r1(x.amt)} ${x.unit==="session" ? "session" : x.unit}` : "Done"}${num(x.temp) ? ` · ${x.temp}${tempU()}` : ""}</span></div>`).join("")}</div>
+  </div>
+  <div class="dlg-foot"><button class="btn pl-no" data-act="recdel">Delete</button><button class="btn pl-yes" data-act="recedit" style="margin-left:auto">Edit</button></div>`;
+  openDlg($("#toolLogDlg"));
+}
+function editRecSession(time){
+  const list = recEntries(time);
+  tl = {date: cur, time, editIds: list.map(([id]) => id), items: list.map(([id,x]) => ({id, name:x.name, unit:x.unit, amt: num(x.amt) ? x.amt : "", temp: num(x.temp) ? x.temp : "", hasTemp: !!x.hasTemp}))};
+  renderToolLog();
+}
+function renderToolLog(){
+  $("#toolLogDlg").innerHTML = `<div class="dlg-head"><h2>${tl.editIds ? "Edit Recovery" : "Log Recovery"}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <div class="fgrid"><label class="f">Date<input class="i" type="date" data-tl="date" value="${esc(tl.date)}"></label><label class="f">Time started<input class="i" type="time" data-tl="time" value="${esc(tl.time)}"></label></div>
+    <div class="plan-items">${tl.items.map((t,i) => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) 64px auto${t.hasTemp ? " 64px auto" : ""}${tl.editIds ? " 28px" : ""}"><span class="nm">${esc(t.name)}</span>
+      <input class="i" type="number" inputmode="decimal" min="0" step="any" data-tla="${i}" value="${esc(t.amt)}" aria-label="${esc(t.name)} amount"><span class="small muted">${t.unit==="session"?"sessions":t.unit}</span>
+      ${tl.editIds ? `<button class="x" data-act="tlremove" data-v="${i}" aria-label="Remove ${esc(t.name)}" style="grid-column:-1">×</button>` : ""}
+      ${t.hasTemp ? `<input class="i" type="text" inputmode="numbers-and-punctuation" data-tlt="${i}" value="${esc(t.temp)}" placeholder="temp" aria-label="${esc(t.name)} temperature"><span class="small muted">${tempU()}</span>` : ""}</div>`).join("")}</div>
+    <p class="small muted" style="margin-top:10px">Adjust the times if they were different, then tap Save.</p>
+  </div>
+  <div class="dlg-foot"><button class="btn pl-yes" data-act="tlsave">Save</button></div>`;
+}
+function saveToolLog(){
+  const d0 = tl.date || cur, n = tl.items.length;
+  if(tl.editIds) editDay(cur, d => { tl.editIds.forEach(id => { delete d.tools[id]; }); });
+  editDay(d0, d => { d.tools = d.tools || {}; tl.items.forEach(t => { d.tools[t.id] = {name:t.name, unit:t.unit, amt: num(t.amt) && t.amt !== "" ? +t.amt : null, temp: num(t.temp) && t.temp !== "" ? +t.temp : null, hasTemp:t.hasTemp, time: tl.time || ""}; }); });
+  toolSel = []; closeDlg($("#toolLogDlg")); render();
+  toast(`Logged ${n} recovery tool${n>1?"s":""}${d0 !== cur ? " for " + fmtShort(d0) : ""}${tl.time ? " at " + fmtTime(tl.time) : ""}`);
+}
 let toolEdit = false;
 function toolList(d){
   const done = getDay(d).tools || {}, stack = state.profile.tools;
@@ -2179,8 +2274,8 @@ function toolsPanelHTML(){
         <span class="tool-inputs"><input class="i" type="number" inputmode="decimal" min="0" step="any" data-toolamt="${t.id}" value="${num(x.amt)?esc(x.amt):""}" aria-label="${esc(t.name)} amount"><span class="small muted">${x.unit==="session"?"sessions":x.unit}</span>
           ${(t.temp||x.hasTemp)?`<input class="i" type="text" inputmode="numbers-and-punctuation" data-tooltemp="${t.id}" value="${num(x.temp)?esc(x.temp):""}" placeholder="temp" aria-label="${esc(t.name)} temperature"><span class="small muted">${tempU()}</span>`:""}</span></div>
       ${t.removed?"":`<button class="x" data-act="edittool" data-id="${t.id}" aria-label="Edit ${esc(t.name)}">✎</button>`}</div>`; }).join("");
-  const tiles = lib.map(t => { const on = !!done[t.id];
-    return `<button class="tool-tile" aria-pressed="${toolEdit?"false":on}" data-act="${toolEdit?"edittool":"toggletool"}" data-id="${t.id}"><span class="dot">${toolEdit?"✎":CHECK}</span>${esc(t.name)}</button>`; }).join("");
+  const tiles = lib.map(t => { const sel = toolSel.includes(t.id), last = lastToolLog(t.id);
+    return `<button class="tool-tile" aria-pressed="${toolEdit?"false":sel}" data-act="${toolEdit?"edittool":"toolsel"}" data-id="${t.id}"><span class="dot">${toolEdit?"✎":CHECK}</span><span>${esc(t.name)}${!toolEdit && last ? `<small class="tool-logged">Last · ${esc(last.d === cur ? (last.time ? fmtTime(last.time) : "Today") : fmtShort(last.d))}</small>` : ""}</span></button>`; }).join("");
   const have = new Set(lib.map(t => t.name.toLowerCase()));
   const more = [...DEFAULT_TOOLS, ...TOOL_PRESETS].map((p,i)=>[p,i]).filter(([p]) => !have.has(p.name.toLowerCase()) && !/^(compression leggings|float tank|epsom salt bath|hyperbaric oxygen|contrast therapy)$/i.test(p.name));
   const editBody = `<div class="edit-list">${lib.map(t => `<div class="edit-row"><span class="nm">${esc(t.name)}<small>${num(t.amt)?`${r1(t.amt)} ${t.unit==="session"?"session":t.unit}`:""}</small></span>
@@ -2189,12 +2284,16 @@ function toolsPanelHTML(){
     <h3 style="margin-top:16px">Add To Recovery Tools</h3>
     <p class="small muted" style="margin:-4px 0 8px">Tap + to add a tool to your Recovery Tools. Use + Today above if you also want it on the Today screen.</p>
     <div class="chips">${more.map(([p,i])=>`<button class="chip" data-act="addlib" data-v="${i}">+ ${esc(p.name)}</button>`).join("")}<button class="chip" data-act="addtool" style="border-style:dashed">+ Create your own</button></div>`;
-  return `<div class="sec-head"><h2>Recovery Tools${count?` <span class="muted nt" style="font-size:18px">${count} today</span>`:""}</h2>${toolEdit?`<button class="btn sm" data-act="tooledit">Done</button>`:`<button class="btn sm" data-act="addtool">Add</button>`}</div>
+  return `<div class="sec-head"><h2>Recovery Tools${count?` <span class="muted nt" style="font-size:18px">${count} today</span>`:""}</h2>${toolEdit?`<button class="btn sm" data-act="tooledit">Done</button>`:`<button class="btn sm ${toolSel.length ? "pl-yes" : ""}" data-act="${toolSel.length ? "toollog" : "addtool"}">${toolSel.length ? `Add (${toolSel.length})` : "Add"}</button>`}</div>
     ${toolEdit ? editBody : `<div class="tool-grid">${tiles}</div>`}
     <div style="display:flex;justify-content:space-between;gap:10px;margin-top:10px">
-      <span class="small muted">${toolEdit?"Add tools, choose which show on the Today screen, or tap ✎ to rename or remove one.":"Tap a tool to log it for today. Tap again to remove it."}</span>
+      <span class="small muted">${toolEdit?"Add tools, choose which show on the Today screen, or tap ✎ to rename or remove one.":"Select the tools you used, then tap Add to log them as a session with a date and start time. Under each tool you'll see when it was last used."}</span>
       <button class="linkbtn" style="white-space:nowrap;align-self:flex-start" data-act="tooledit">${toolEdit?"Done":"Edit list"}</button></div>
-    ${rows?`<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:10px"><div class="logged-head" style="display:flex;justify-content:space-between;align-items:center">Logged today · adjust time or temperature<button class="btn ghost sm" data-act="dupopen" data-t="recovery" data-id="day">Duplicate</button></div>${rows}</div>`:""}`;
+    ${(() => { const groups = {}; Object.values(done).forEach(x => (groups[x.time || ""] = groups[x.time || ""] || []).push(x));
+      const ss = Object.entries(groups).sort((a,b) => (toMin(a[0]) ?? 9999) - (toMin(b[0]) ?? 9999));
+      return ss.length ? `<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:10px"><div class="logged-head" style="display:flex;justify-content:space-between;align-items:center">Recovery sessions ${cur===todayStr()?"today":"on " + esc(fmtShort(cur))}<button class="btn ghost sm" data-act="dupopen" data-t="recovery" data-id="day">Duplicate</button></div>
+        <div class="today-wks">${ss.map(([time, list]) => `<button class="today-wk" data-act="recview" data-v="${esc(time)}"><b>${time ? esc(fmtTime(time)) : "No start time"}</b><span style="white-space:normal;text-align:right">${esc(list.map(x => x.name + (num(x.amt) && +x.amt ? " " + r1(x.amt) + " " + (x.unit==="session" ? "session" : x.unit) : "")).join(" · "))}</span></button>`).join("")}</div>
+        <p class="small muted" style="margin:6px 0 0">Tap a session to see it, then Edit or Delete.</p></div>` : ""; })()}`;
 }
 
 let tdlg = null;
@@ -2482,6 +2581,9 @@ const REST_RAW = [
   ["Chipotle","Kid's Build Your Own (chicken)",[420,26,46,14,6,2,690]],
   ["Chipotle","Kid's Quesadilla",[460,22,40,25,1,1,920]],
   // McDonald's
+  // Homemade (calories from you; macros estimated)
+  ["Homemade","Pizza · BBQ Chicken Bacon (1 slice)",[243,12,28,9,1,6,550]],
+  ["Homemade","Pizza · Meatlovers (1 slice)",[288,13,26,15,1,3,700]],
   // Premier Protein (frozen)
   ["Premier Protein","Protein Pancakes (frozen) · 1 serving",[210,15,27,3.5,1,5,400]],
   // Dave's Hot Chicken (No Spice; calories and protein from the published chart, other values approximate)
@@ -2642,6 +2744,18 @@ function chipBuilderHTML(){
     <p class="small muted" style="margin-top:8px">Standard Chipotle portions from their published nutrition. Extra or light scoops will change it.</p>`;
 }
 
+/* Foods you've logged before rise to the top of searches (most used first, then most recent) */
+function foodUse(){
+  const use = {};
+  Object.entries(state.days).forEach(([d, day]) => (day.meals||[]).forEach(m => { const u = use[m.name] || (use[m.name] = {n:0, last:""}); u.n++; if(d > u.last) u.last = d; }));
+  return use;
+}
+function byUse(list){
+  const use = foodUse();
+  return list.map((f,i) => [f,i]).sort((a,b) => { const ua = use[a[0].name], ub = use[b[0].name];
+    if(!!ua !== !!ub) return ua ? -1 : 1; if(ua && ub && ua.n !== ub.n) return ub.n - ua.n; if(ua && ub && ua.last !== ub.last) return ua.last < ub.last ? 1 : -1; return a[1] - b[1]; }).map(x => x[0]);
+}
+const usedTag = f => { const u = foodUse()[f.name]; return u ? `★ Used ${u.n}× · ` : ""; };
 function allFoods(){
   const mine = state.profile.myFoods.map(f => ({mine:true, name:f.name, per:f.n, id:f.id}));
   const base = FOODS.map((r,i) => ({idx:i, name:r[0], per:Object.fromEntries(NK.map((k,j)=>[k,r[j+1]])), unit:r[12], ug:r[13]}));
@@ -2649,12 +2763,12 @@ function allFoods(){
 }
 function foodResultsHTML(){
   const q = fd.q.trim().toLowerCase();
-  const list = allFoods().filter(f => (!fd.brand || f.brand===fd.brand) && (!q || f.name.toLowerCase().includes(q))).slice(0, fd.brand ? 80 : 60);
+  const list = byUse(allFoods().filter(f => (!fd.brand || f.brand===fd.brand) && (!q || f.name.toLowerCase().includes(q)))).slice(0, fd.brand ? 80 : 60);
   if(!list.length) return `<div class="res" style="cursor:default">No match. Try the Custom tab${SAMPLE?" or Describe it":""}.</div>`;
   const note = fd.brand ? `<div class="res" style="cursor:default;display:block"><small>${list.length} items · Published US nutrition. Some values are approximate and menus change, so check the restaurant's app if exact numbers matter.</small></div>` : "";
   return note + list.map(f => {
     const key = f.mine ? "m:"+f.id : "b:"+f.idx, sel = fd.sel && fd.sel.key===key;
-    return `<button class="res ${sel?"sel":""}" data-act="pickfood" data-key="${key}"><span>${esc(f.name)}<br><small>${f.rest?"per item":f.mine?"My food · per serving":"per 100 g"}</small></span><span class="macros">${r0(f.per.kcal)} kcal<br>${macroLine(f.per)}</span></button>`;
+    return `<button class="res ${sel?"sel":""}" data-act="pickfood" data-key="${key}"><span>${esc(f.name)}<br><small>${usedTag(f)}${f.rest?"per item":f.mine?"My food · per serving":"per 100 g"}</small></span><span class="macros">${r0(f.per.kcal)} kcal<br>${macroLine(f.per)}</span></button>`;
   }).join("");
 }
 function selNutrients(){
@@ -2803,7 +2917,7 @@ function renderWkDlg(){
   <div class="dlg-body">
     ${wd.program && PROGRAM.days[wd.program.day] ? (() => { const d = PROGRAM.days[wd.program.day]; return `<div class="prog-box"><b>${esc(PROGRAM.name)}${wd.program.week?` · Week ${wd.program.week}`:""}</b>
       <small>Focus: ${esc(d.focus)}</small>${d.kind==="mob"?`<small style="margin-top:6px;color:var(--ink)">${esc(MOB_NOTE)}</small>`:""}</div>`; })() : ""}
-    ${wd.recordMode ? `<p class="small muted" style="margin:0 0 12px">Planned${(wd.sections||[]).length?" · "+esc(wd.sections.map(secName).join(" + ")):""}. Record what you did, then tap Save.</p>` : ""}
+    ${wd.recordMode ? `<p class="small muted" style="margin:0 0 12px">Planned${(wd.sections||[]).length?" · "+esc(wd.sections.map(secName).join(" + ")):""}. Record what you did, then tap Save.</p>${gcalBtn(gcalURL(wd.title || wd.sections.map(secName).join(" + ") || (wd.cat==="practice" ? "Practice" : "Workout"), wd.date || cur, wd.time, +wd.dur || 60, (wd.exercises||[]).map(e => "• " + e.name).join("\n")))}` : ""}
     ${!wd.recordMode && wd.cat!=="practice" ? `<h3>Templates</h3><p class="small muted" style="margin:-4px 0 6px">Load a full Baseball Strong day. You can add or remove exercises after.</p>${templateChipsHTML("wktemplate", wd.program && wd.program.day)}` : ""}
     ${(wd.recordMode || (wd.editing && wd.cat==="practice")) ? "" : `    <h3>${wd.cat==="practice"?"What Are You Working On?":"What Are You Training?"}</h3>
     <div class="chips sec-chips" style="margin-bottom:14px">${secsFor(wd.cat).map(([k,l]) => `<button class="chip" aria-pressed="${wd.sections.includes(k)}" data-act="wksec" data-v="${k}">${wd.sections.includes(k)?"✓":"+"} ${l}</button>`).join("")}</div>`}
@@ -2975,6 +3089,14 @@ document.addEventListener("click", e => {
     // recovery tools
     case "toggletool": { const id = b.dataset.id, t = toolList(cur).find(x=>x.id===id);
       editDay(cur, d => { d.tools = d.tools || {}; if(d.tools[id]) delete d.tools[id]; else d.tools[id] = {name:t.name, unit:t.unit, amt: num(t.amt)?+t.amt:null, temp:null, hasTemp:!!t.temp}; }); break; }
+    case "toolunlog": { const id = b.dataset.id, x = (getDay(cur).tools||{})[id]; if(!x) break; askConfirm(`Remove ${x.name} from ${cur===todayStr()?"today":fmtShort(cur)}?`, "Remove").then(ok => { if(ok){ editDay(cur, d => { delete d.tools[id]; }); toast(`${x.name} removed`); } }); break; }
+    case "recview": openRecView(v); break;
+    case "recedit": editRecSession(tl.viewTime); break;
+    case "recdel": { const time = tl.viewTime; askConfirm("Delete this recovery session?", "Delete").then(ok => { if(!ok) return; const ids = recEntries(time).map(([id]) => id); closeDlg($("#toolLogDlg")); editDay(cur, d => { ids.forEach(id => { delete d.tools[id]; }); }); toast("Recovery session deleted"); }); break; }
+    case "tlremove": tl.items.splice(+v, 1); keepScroll("#toolLogDlg", renderToolLog); break;
+    case "toolsel": { const id = b.dataset.id, i = toolSel.indexOf(id); if(i>=0) toolSel.splice(i,1); else toolSel.push(id); const tp = $("#toolsPanel"); if(tp) tp.innerHTML = toolsPanelHTML(); break; }
+    case "toollog": if(toolSel.length) openToolLog(); break;
+    case "tlsave": saveToolLog(); break;
     case "addtool": openTool(null); if(tab === "today"){ tdlg.logNow = true; renderToolDlg(); } break;
     case "tooledit": toolEdit = !toolEdit; render(); break;
     case "pintool": { const t = state.profile.tools.find(x => x.id===b.dataset.id); if(t){ t.pinned = !t.pinned; save("profile"); render(); toast(t.pinned ? `${t.name} is on the Today screen` : `${t.name} removed from Today`); } break; }
@@ -3011,6 +3133,9 @@ document.addEventListener("input", e => {
   if(t.dataset.swev !== undefined){ wd.exercises[+t.dataset.swev]._ev = t.value; return; }
   if(t.dataset.plvelo !== undefined){ wd.exercises[+t.dataset.plvelo]._velo = t.value; return; }
   if(t.dataset.dup){ if(dup) dup[t.dataset.dup] = t.value; return; }
+  if(t.dataset.tl){ tl[t.dataset.tl] = t.value; return; }
+  if(t.dataset.tla !== undefined){ tl.items[+t.dataset.tla].amt = t.value; return; }
+  if(t.dataset.tlt !== undefined){ tl.items[+t.dataset.tlt].temp = t.value; return; }
   if(t.dataset.rt){ rt[t.dataset.rt] = t.value; return; }
   if(t.dataset.nx){ nx[t.dataset.nx] = t.value; const b = $("#saveNxBtn"); if(b) b.disabled = !nx.name.trim(); return; }
   if(t.dataset.sf && t.type !== "checkbox"){ sd[t.dataset.sf] = t.value; const b = $("#saveSuppBtn"); if(b) b.disabled = !sd.name.trim(); return; }
@@ -3144,8 +3269,8 @@ setAppH(); window.addEventListener("resize", setAppH); if(window.visualViewport)
 /* ==========================================================================
    SUPABASE SETUP — paste your project's values here (Settings → API)
    ========================================================================== */
-const SUPABASE_URL = "https://vcurpxoxyvzokyyoeeir.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nyto9VAlT4hsQ5SLkX7zPQ_zW5YrFQO";
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const VIDEO_BUCKET = "exercise-videos";
 /* ========================================================================== */
 
@@ -3316,6 +3441,7 @@ document.addEventListener("click", e => {
   if(b.dataset.sb === "export") exportData();
   if(b.dataset.sb === "import"){ const f = (b.closest("dialog") || document).querySelector("#importFile") || $("#importFile"); if(f) f.click(); }
   if(b.dataset.sb === "account") openAccount();
+  if(b.dataset.sb === "ics") exportICS();
   if(b.dataset.sb === "photo"){ const f = $("#photoFile"); if(f) f.click(); }
   if(b.dataset.sb === "photodel"){ delete state.profile.avatar; save("profile"); renderAcctBtn(); renderAccount(); toast("Photo removed"); }
   if(b.dataset.sb === "acctsave") saveAccount();
