@@ -504,6 +504,7 @@ h2,h3,h4,.wk-title{text-transform:capitalize}
 <dialog id="planDlg"></dialog>
 <dialog id="retestDlg"></dialog>
 <dialog id="dupDlg"></dialog>
+<dialog id="mealDlg"></dialog>
 <dialog id="acctDlg"></dialog>
 <dialog id="exDlg"></dialog>
 <dialog id="confirmDlg"></dialog>
@@ -553,10 +554,6 @@ const FOODS = [
  ["Granola",471,10,64,20,7,24,25,400,60,3,0,"½ cup (60 g)",60],
  ["Sweet potato, baked",90,2,20.7,0.2,3.3,6.5,36,475,38,0.7,19.6,"medium (114 g)",114],
  ["Potato, baked",93,2.5,21,0.1,2.2,1.2,10,535,15,1.1,9.6,"medium (173 g)",173],
- ["Banana",89,1.1,22.8,0.3,2.6,12.2,1,358,5,0.3,8.7,"medium (118 g)",118],
- ["Apple",52,0.3,13.8,0.2,2.4,10.4,1,107,6,0.1,4.6,"medium (182 g)",182],
- ["Orange",47,0.9,11.8,0.1,2.4,9.4,0,181,40,0.1,53,"medium (131 g)",131],
- ["Blueberries",57,0.7,14.5,0.3,2.4,10,1,77,6,0.3,9.7,"cup (148 g)",148],
  ["Orange juice",45,0.7,10.4,0.2,0.2,8.4,1,200,11,0.2,50,"cup (248 g)",248],
  ["Broccoli",34,2.8,6.6,0.4,2.6,1.7,33,316,47,0.7,89,"cup (91 g)",91],
  ["Spinach, raw",23,2.9,3.6,0.4,2.2,0.4,79,558,99,2.7,28,"cup (30 g)",30],
@@ -571,6 +568,32 @@ const FOODS = [
  ["Honey",304,0.3,82.4,0,0.2,82.1,4,52,6,0.4,0.5,"tbsp (21 g)",21],
  ["Sports drink",24,0,6,0,0,6,41,12,0,0,0,"bottle (591 g)",591]
 ];
+/* Fruit in every common serving size. Per-100 g values (USDA): kcal, protein, carbs, fat, fiber, sugar, sodium, potassium, calcium, iron, vitamin C */
+const FRUITS = [
+ ["Apple",[52,0.26,13.8,0.17,2.4,10.4,1,107,6,0.12,4.6],[["small",149],["medium",182],["large",223],["1 cup sliced",109]]],
+ ["Banana",[89,1.09,22.8,0.33,2.6,12.2,1,358,5,0.26,8.7],[["small",101],["medium",118],["large",136],["extra large",152],["1 cup sliced",150]]],
+ ["Orange",[47,0.94,11.8,0.12,2.4,9.4,0,181,40,0.1,53.2],[["small",96],["medium",131],["large",184],["1 cup sections",180]]],
+ ["Clementine",[47,0.85,12,0.15,1.7,9.2,1,177,30,0.14,48.8],[["1 fruit",74],["2 fruits",148]]],
+ ["Grapefruit",[42,0.77,10.7,0.14,1.6,6.9,0,135,22,0.08,31.2],[["½ fruit",123],["1 cup sections",230]]],
+ ["Strawberries",[32,0.67,7.7,0.3,2,4.9,1,153,16,0.41,58.8],[["1 berry",12],["5 berries",60],["1 cup whole",144],["1 cup halves",152]]],
+ ["Blueberries",[57,0.74,14.5,0.33,2.4,10,1,77,6,0.28,9.7],[["½ cup",74],["1 cup",148]]],
+ ["Raspberries",[52,1.2,11.9,0.65,6.5,4.4,1,151,25,0.69,26.2],[["½ cup",62],["1 cup",123]]],
+ ["Blackberries",[43,1.39,9.6,0.49,5.3,4.9,1,162,29,0.62,21],[["½ cup",72],["1 cup",144]]],
+ ["Grapes",[69,0.72,18.1,0.16,0.9,15.5,2,191,10,0.36,3.2],[["10 grapes",49],["½ cup",76],["1 cup",151]]],
+ ["Cherries",[63,1.06,16,0.2,2.1,12.8,0,222,13,0.36,7],[["10 cherries",68],["1 cup",138]]],
+ ["Pineapple",[50,0.54,13.1,0.12,1.4,9.9,1,109,13,0.29,47.8],[["1 slice",84],["1 cup chunks",165]]],
+ ["Mango",[60,0.82,15,0.38,1.6,13.7,1,168,11,0.16,36.4],[["1 cup pieces",165],["1 whole mango",336]]],
+ ["Watermelon",[30,0.61,7.6,0.15,0.4,6.2,1,112,7,0.24,8.1],[["1 cup diced",152],["1 wedge",286]]],
+ ["Cantaloupe",[34,0.84,8.2,0.19,0.9,7.9,16,267,9,0.21,36.7],[["1 cup cubes",160],["⅛ melon",69]]],
+ ["Peach",[39,0.91,9.5,0.25,1.5,8.4,0,190,6,0.25,6.6],[["small",130],["medium",150],["large",175],["1 cup sliced",154]]],
+ ["Pear",[57,0.36,15.2,0.14,3.1,9.8,1,116,9,0.18,4.3],[["small",148],["medium",178],["large",230]]],
+ ["Plum",[46,0.7,11.4,0.28,1.4,9.9,0,157,6,0.17,9.5],[["1 fruit",66]]],
+ ["Kiwi",[61,1.14,14.7,0.52,3,9,3,312,34,0.31,92.7],[["1 fruit",69],["1 cup sliced",180]]],
+ ["Raisins",[299,3.07,79.2,0.46,3.7,59.2,11,749,50,1.88,2.3],[["small box",43],["¼ cup",40]]],
+ ["Medjool Dates",[277,1.81,75,0.15,6.7,66.5,1,696,64,0.9,0],[["1 date",24],["3 dates",72]]],
+ ["Applesauce, unsweetened",[42,0.17,11.3,0.1,1.1,9.4,2,74,3,0.12,0.5],[["1 pouch",90],["½ cup",122]]]
+];
+FRUITS.forEach(([name, v, sizes]) => sizes.forEach(([size, g]) => FOODS.push([`${name} · ${size}`, ...v, `${size} (${g} g)`, g])));
 const NK = ["kcal","p","c","f","fib","sug","na","k","ca","fe","vc"];
 const NUT = {
   kcal:{l:"Calories",u:"kcal"}, p:{l:"Protein",u:"g"}, c:{l:"Carbs",u:"g"}, f:{l:"Fat",u:"g"},
@@ -785,7 +808,7 @@ function agenda(d){
   const groups = {};
   day.meals.forEach(m => { const k = m.meal + "|" + mealTime(m); (groups[k] ||= {meal:m.meal, time:mealTime(m), items:[]}).items.push(m); });
   Object.values(groups).forEach(g => { const n = g.items.reduce((a,m)=>{ NK.forEach(k=>a[k]=(a[k]||0)+(+m.n[k]||0)); return a; },{});
-    items.push({kind:"meal", t:toMin(g.time), meal:g.meal, title: MEALS.find(x=>x[0]===g.meal)[1], sub: g.items.map(m=>m.name).join(", "), n}); });
+    items.push({kind:"meal", t:toMin(g.time), meal:g.meal, mkey: g.meal + "|" + g.time, title: MEALS.find(x=>x[0]===g.meal)[1], sub: g.items.map(m=>m.name).join(", "), n}); });
   (() => { const groups = {};
     Object.values(day.tools||{}).filter(x => x.time).forEach(x => (groups[x.time] = groups[x.time] || []).push(x));
     Object.entries(groups).forEach(([time, list]) => items.push({kind:"tool", t: toMin(time), time, title: "Recovery",
@@ -836,7 +859,7 @@ function calendarPanelHTML(){
   const rows = items.map(it => {
     let pre = ""; if(!nowDrawn && it.t !== null && it.t > nowM){ nowDrawn = true; pre = `<div class="ag-now"><span>${fmtTime(nowM)}</span></div>`; }
     const cls = it.kind==="plan" ? `plan ${it.pk}` : it.kind;
-    const act = it.kind==="tool" ? `data-act="recview" data-v="${esc(it.time)}"` : it.kind==="meal" ? `data-act="tab" data-v="food"` : it.kind==="workout" ? `data-act="editwk" data-id="${it.id}"` : it.prog ? `data-act="startprog" data-v="${it.prog}"` : `data-act="editplan" data-id="${it.id}"`;
+    const act = it.kind==="tool" ? `data-act="recview" data-v="${esc(it.time)}"` : it.kind==="meal" ? `data-act="mealview" data-v="${esc(it.mkey)}"` : it.kind==="workout" ? `data-act="editwk" data-id="${it.id}"` : it.prog ? `data-act="startprog" data-v="${it.prog}"` : `data-act="editplan" data-id="${it.id}"`;
     return `${pre}<button class="ag-row ${cls}" ${act}><span class="ag-t">${it.t!==null?fmtTime(it.t):"—"}${it.dur?`<small>${fmtTime(it.t+it.dur)}</small>`:""}</span>
       <span class="ag-bar"></span><span class="ag-body"><b>${esc(it.title)}</b><small>${it.kind==="meal"?`${r0(it.n.kcal)} kcal · P ${r0(it.n.p)} · C ${r0(it.n.c)} · F ${r0(it.n.f)} — ${esc(it.sub)}`:esc(it.sub)}</small></span>
       ${it.kind==="plan"?`<span class="ag-tag">${it.prog?"Program":"Planned"}</span>`:""}</button>`;
@@ -1001,6 +1024,47 @@ function savePlan(close=true){
 }
 function markPlanDone(planId){ if(!planId) return; const d = state.days[cur]; const p = d && (d.plan||[]).find(x => x.id===planId); if(p) p.done = true; }
 
+/* Completed meals on the calendar: view, edit, duplicate, delete — same pattern as training sessions */
+let mv = null;
+function mealEntries(key){ return getDay(cur).meals.filter(m => (m.meal + "|" + mealTime(m)) === key); }
+function openMealView(key){
+  const es = mealEntries(key); if(!es.length) return;
+  mv = {key, mode:"view", date:cur, time: mealTime(es[0]), meal: es[0].meal, items: es.map(m => ({id:m.id, name:m.name, qtyLabel:m.qtyLabel||"", n:{...m.n}, mult:1}))};
+  renderMealDlg(); openDlg($("#mealDlg"));
+}
+function mealTotals(items){ const t = Object.fromEntries(NK.map(k => [k,0])); items.forEach(it => NK.forEach(k => t[k] += (+it.n[k] || 0) * (+it.mult || 0))); return t; }
+function renderMealDlg(){
+  const name = MEALS.find(x => x[0]===mv.meal)[1], t = mealTotals(mv.items);
+  if(mv.mode === "view"){
+    $("#mealDlg").innerHTML = `<div class="dlg-head"><h2 style="font-size:20px">${esc(name)}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+    <div class="dlg-body">
+      <p class="small muted" style="margin:0 0 12px">${esc(fmtShort(cur))} · ${esc(fmtTime(mv.time))} · ${r0(t.kcal)} kcal · P ${r0(t.p)} · C ${r0(t.c)} · F ${r0(t.f)}</p>
+      <div class="view-list">${mv.items.map(it => `<div class="view-ex"><b>${esc(it.name)}</b><span>${esc(it.qtyLabel)}${it.qtyLabel ? " · " : ""}${r0(it.n.kcal)} kcal · P ${r0(it.n.p)} · C ${r0(it.n.c)} · F ${r0(it.n.f)}</span></div>`).join("")}</div>
+    </div>
+    <div class="dlg-foot"><button class="btn pl-no" data-act="mealdel">Delete</button><button class="btn btn-blue" data-act="mealdup" style="margin-right:auto">Duplicate</button><button class="btn pl-yes" data-act="mealedit">Edit</button></div>`;
+    return;
+  }
+  $("#mealDlg").innerHTML = `<div class="dlg-head"><h2 style="font-size:20px">Edit ${esc(name)}</h2><button class="x" data-act="closedlg" aria-label="Close">×</button></div>
+  <div class="dlg-body">
+    <div class="fgrid"><label class="f">Date<input class="i" type="date" data-mv="date" value="${esc(mv.date)}"></label><label class="f">Time<input class="i" type="time" data-mv="time" value="${esc(mv.time)}"></label>
+      <label class="f">Meal<select class="i" data-mv="meal">${MEALS.map(([k,l]) => `<option value="${k}" ${mv.meal===k?"selected":""}>${l}</option>`).join("")}</select></label></div>
+    ${mv.items.length ? `<div class="plan-items">${mv.items.map((it,i) => `<div class="plan-item" style="grid-template-columns:minmax(0,1fr) 64px auto 28px"><span class="nm">${esc(it.name)}<small class="muted" style="display:block;font-weight:400">${esc(it.qtyLabel)}</small></span>
+      <input class="i" type="number" inputmode="decimal" min="0" step="any" data-mvq="${i}" value="${esc(it.mult)}" aria-label="How many of this amount"><span class="small" data-mvk="${i}">${r0((+it.n.kcal||0) * (+it.mult||0))} kcal</span>
+      <button class="x" data-act="mealrm" data-v="${i}" aria-label="Remove ${esc(it.name)}">×</button></div>`).join("")}</div>
+      <p class="small muted" style="margin:6px 0 0">The number is how many times the logged amount you had: 1 = as logged, 0.5 = half, 2 = double.</p>` : `<p class="empty-note">No foods left. Saving will remove this meal.</p>`}
+    <button class="linkbtn" data-act="mealaddfood" style="margin-top:10px">+ Add food to this meal</button>
+  </div>
+  <div class="dlg-foot"><button class="btn btn-blue" data-act="mealdup" style="margin-right:auto">Duplicate</button><button class="btn pl-yes" data-act="mealsave">Save</button></div>`;
+}
+function saveMealEdit(quiet){
+  const ids = mealEntries(mv.key).map(m => m.id), target = mv.date || cur;
+  const items = mv.items.filter(it => (+it.mult || 0) > 0).map(it => { const k = +it.mult; return {id: uid(), meal: mv.meal, time: mv.time, name: it.name,
+    qtyLabel: k === 1 ? it.qtyLabel : `${r1(k)} × (${it.qtyLabel || "as logged"})`, n: Object.fromEntries(NK.map(x => [x, (+it.n[x] || 0) * k]))}; });
+  editDay(cur, d => d.meals = d.meals.filter(m => !ids.includes(m.id)));
+  editDay(target, d => items.forEach(m => d.meals.push(m)));
+  mv.key = mv.meal + "|" + mv.time;
+  closeDlg($("#mealDlg")); if(!quiet) toast(items.length ? (target !== cur ? `Meal moved to ${fmtShort(target)}` : "Meal updated") : "Meal removed");
+}
 function renderToday(){
   const day = getDay(cur), t = totals(day), T = state.profile.targets, kt = kcalTarget(day);
   const rd = readiness(cur), d = parse(cur), a = acwr(cur), z = zone(a.ratio), rec = day.recovery || {};
@@ -2026,6 +2090,7 @@ function completeProgram(dk){
 let dup = null;
 function dupLabel(){
   if(dup.t==="session"){ const w = getDay(cur).workouts.find(x => x.id===dup.id); return w ? (w.title || w.type) : "Session"; }
+  if(dup.t==="meal"){ const es = mealEntries(dup.id); return es.length ? MEALS.find(x => x[0]===es[0].meal)[1] + " · " + es.map(m => m.name).join(", ") : "Meal"; }
   if(dup.t==="prog"){ const P = PROGRAM.days[dup.id]; return P ? `OFS26-${P.n} · ${P.title}` : "Program day"; }
   if(dup.t==="plan"){ const p = (getDay(cur).plan||[]).find(x => x.id===dup.id); return p ? (p.kind==="recovery" ? "Recovery" : p.title || (p.sections||[]).map(secName).join(" + ") || (p.kind==="practice"?"Practice":"Workout")) : "Plan"; }
   return `Recovery · ${toolSummary(cur).join(", ")}`;
@@ -2054,6 +2119,11 @@ function saveDup(){
     if(asPlan) editDay(target, d => { d.plan = d.plan || []; d.plan.push(planFromSession(w)); });
     else editDay(target, d => d.workouts.push({...JSON.parse(JSON.stringify(w)), id:uid()}));
     msg = w.title || w.type;
+  } else if(dup.t==="meal"){
+    const es = mealEntries(dup.id); if(!es.length) return; const meal = es[0].meal, time = mealTime(es[0]);
+    if(asPlan) editDay(target, d => { d.plan = d.plan || []; d.plan.push({id:uid(), kind:"meal", meal, time, note:"", done:false, items: es.map(m => ({name:m.name, per:{...m.n}, serv:true, qty:1, n:{...m.n}}))}); });
+    else editDay(target, d => es.forEach(m => d.meals.push({...JSON.parse(JSON.stringify(m)), id:uid()})));
+    msg = MEALS.find(x => x[0]===meal)[1];
   } else if(dup.t==="prog"){
     const P = PROGRAM.days[dup.id], ids = PROGRAM_EX.filter(e => e.day===dup.id).map(e => e.id);
     const p = {id:uid(), kind:"workout", time:progConf().time, done:false, title:`OFS26-${P.n} · ${P.title}`, sections:[], dur: P.kind==="lift" ? 75 : 40, exIds:ids};
@@ -2105,7 +2175,6 @@ const DEFAULT_TOOLS = [
   {name:"Massage Gun", unit:"min", amt:10},
   {name:"MarcPro", unit:"min", amt:30},
   {name:"Red Light Bed", unit:"min", amt:15},
-  {name:"Sauna", unit:"min", amt:20, temp:true},
   {name:"Cold Plunge", unit:"min", amt:3, temp:true},
   {name:"PEMF Therapy", unit:"min", amt:20},
   {name:"Compression Leggings", unit:"h", amt:1},
@@ -2146,8 +2215,11 @@ function ensurePinnedTools(){
   P.toolPinV1 = true; return true;
 }
 function ensureToolLibrary(){
+  // Sauna was removed from the preloaded tools: take it off the grid once (logged sessions stay in your history)
+  const P0 = state.profile; let removed = false;
+  if(!P0.saunaGone){ P0.tools = P0.tools.filter(t => !/^sauna$/i.test(t.name)); P0.saunaGone = true; removed = true; }
   // Presets live in the Add list, not on your grid. Undo the earlier auto-add for any preset you never logged or changed.
-  const P = state.profile; if(P.toolLibV3) return false;
+  const P = state.profile; if(P.toolLibV3) return removed;
   const used = new Set(); Object.values(state.days).forEach(d => Object.keys(d.tools||{}).forEach(id => used.add(id)));
   P.tools = P.tools.filter(t => { const p = TOOL_PRESETS.find(x => x.name === t.name);
     return !(p && !used.has(t.id) && p.unit === t.unit && +p.amt === +t.amt && !!p.temp === !!t.temp); });
@@ -2497,15 +2569,14 @@ function renderTargets(){
       <h3>Estimate targets for me</h3>
       <p class="small muted">Uses the Mifflin–St Jeor equation. A starting point to adjust from how your weight and training respond over a few weeks.</p>
       <div class="fgrid">
-        <label class="f">Sex<select class="i" data-calc="sex"><option value="m" ${C.sex==="m"?"selected":""}>Male</option><option value="f" ${C.sex==="f"?"selected":""}>Female</option></select></label>
-        <label class="f">Age<input class="i" type="number" data-calc="age" value="${esc(C.age)}"></label>
-        <label class="f">Height<span class="h">cm</span><input class="i" type="number" data-calc="height" value="${esc(C.height)}"></label>
-        <label class="f">Weight<span class="h">${wU()}</span><input class="i" type="number" step="0.1" data-calc="weight" value="${esc(C.weight)}"></label>
+        ${(() => { const totIn = Math.round((+C.height || 0) / 2.54), ft = Math.floor(totIn / 12), inch = totIn - ft * 12;
+          return `<label class="f">Height<span class="h">feet</span><input class="i" type="number" inputmode="numeric" min="0" step="1" data-calc="hft" value="${ft || ""}"></label>
+        <label class="f">&nbsp;<span class="h">inches</span><input class="i" type="number" inputmode="numeric" min="0" max="11" step="1" data-calc="hin" value="${C.height ? inch : ""}"></label>`; })()}
+        <label class="f">Weight<span class="h">lbs</span><input class="i" type="number" inputmode="decimal" step="0.1" data-calc="weight" value="${esc(C.weight)}"></label>
       </div>
-      <label class="f">Activity<select class="i" data-calc="activity">${[[1.2,"Mostly sitting, little exercise"],[1.375,"Train 1–3 days a week"],[1.55,"Train 3–5 days a week"],[1.725,"Train 6–7 days a week"],[1.9,"Twice a day or physical job"]].map(([v,l])=>`<option value="${v}" ${+C.activity===v?"selected":""}>${l}</option>`).join("")}</select></label>
-      <div class="fgrid">
+      <div class="fgrid" style="grid-template-columns:minmax(0,1fr) minmax(0,1fr)">
         <label class="f">Goal<select class="i" data-calc="goal"><option value="lose" ${C.goal==="lose"?"selected":""}>Lose fat</option><option value="maintain" ${C.goal==="maintain"?"selected":""}>Maintain</option><option value="gain" ${C.goal==="gain"?"selected":""}>Build muscle</option></select></label>
-        <label class="f">Protein<span class="h">g per kg bodyweight</span><select class="i" data-calc="pkg">${[1.4,1.6,1.8,2.0,2.2].map(v=>`<option value="${v}" ${+C.pkg===v?"selected":""}>${v}</option>`).join("")}</select></label>
+        <label class="f">Protein (g/kg)<select class="i" data-calc="pkg">${[1.4,1.6,1.8,2.0,2.2].map(v=>`<option value="${v}" ${+C.pkg===v?"selected":""}>${v}</option>`).join("")}</select></label>
       </div>
       <div class="preview" id="calcPreview">${calcPreview()}</div>
       <div class="actions" style="margin-top:12px"><button class="btn" data-act="applycalc">Use these targets</button></div>
@@ -2518,7 +2589,7 @@ function renderTargets(){
   </div>${accountPanelHTML()}`;
 }
 function calcTargets(){
-  const C = state.profile.calc, kg = state.profile.units==="lb" ? C.weight*0.453592 : +C.weight;
+  const C = state.profile.calc, kg = (+C.weight || 0) * 0.453592; // weight is entered in lbs
   const bmr = 10*kg + 6.25*C.height - 5*C.age + (C.sex==="m"?5:-161);
   let kcal = bmr * C.activity; kcal += C.goal==="lose" ? -Math.min(500, kcal*0.2) : C.goal==="gain" ? 300 : 0;
   kcal = Math.round(kcal/10)*10;
@@ -3090,6 +3161,13 @@ document.addEventListener("click", e => {
     case "toggletool": { const id = b.dataset.id, t = toolList(cur).find(x=>x.id===id);
       editDay(cur, d => { d.tools = d.tools || {}; if(d.tools[id]) delete d.tools[id]; else d.tools[id] = {name:t.name, unit:t.unit, amt: num(t.amt)?+t.amt:null, temp:null, hasTemp:!!t.temp}; }); break; }
     case "toolunlog": { const id = b.dataset.id, x = (getDay(cur).tools||{})[id]; if(!x) break; askConfirm(`Remove ${x.name} from ${cur===todayStr()?"today":fmtShort(cur)}?`, "Remove").then(ok => { if(ok){ editDay(cur, d => { delete d.tools[id]; }); toast(`${x.name} removed`); } }); break; }
+    case "mealview": openMealView(v); break;
+    case "mealedit": mv.mode = "edit"; renderMealDlg(); break;
+    case "mealdup": { const key = mv.key; closeDlg($("#mealDlg")); setTimeout(() => openDup("meal", key), 50); break; }
+    case "mealdel": { const key = mv.key; askConfirm("Delete this meal and all its foods?", "Delete").then(ok => { if(!ok) return; const ids = mealEntries(key).map(m => m.id); closeDlg($("#mealDlg")); editDay(cur, d => d.meals = d.meals.filter(m => !ids.includes(m.id))); toast("Meal deleted"); }); break; }
+    case "mealrm": mv.items.splice(+v, 1); keepScroll("#mealDlg", renderMealDlg); break;
+    case "mealsave": saveMealEdit(); break;
+    case "mealaddfood": { const meal = mv.meal, time = mv.time; saveMealEdit(true); openFood(meal, {time}); break; }
     case "recview": openRecView(v); break;
     case "recedit": editRecSession(tl.viewTime); break;
     case "recdel": { const time = tl.viewTime; askConfirm("Delete this recovery session?", "Delete").then(ok => { if(!ok) return; const ids = recEntries(time).map(([id]) => id); closeDlg($("#toolLogDlg")); editDay(cur, d => { ids.forEach(id => { delete d.tools[id]; }); }); toast("Recovery session deleted"); }); break; }
@@ -3136,6 +3214,8 @@ document.addEventListener("input", e => {
   if(t.dataset.tl){ tl[t.dataset.tl] = t.value; return; }
   if(t.dataset.tla !== undefined){ tl.items[+t.dataset.tla].amt = t.value; return; }
   if(t.dataset.tlt !== undefined){ tl.items[+t.dataset.tlt].temp = t.value; return; }
+  if(t.dataset.mv){ mv[t.dataset.mv] = t.value; return; }
+  if(t.dataset.mvq !== undefined){ const it = mv.items[+t.dataset.mvq]; it.mult = t.value; const k = document.querySelector(`[data-mvk="${t.dataset.mvq}"]`); if(k) k.textContent = r0((+it.n.kcal || 0) * (+t.value || 0)) + " kcal"; return; }
   if(t.dataset.rt){ rt[t.dataset.rt] = t.value; return; }
   if(t.dataset.nx){ nx[t.dataset.nx] = t.value; const b = $("#saveNxBtn"); if(b) b.disabled = !nx.name.trim(); return; }
   if(t.dataset.sf && t.type !== "checkbox"){ sd[t.dataset.sf] = t.value; const b = $("#saveSuppBtn"); if(b) b.disabled = !sd.name.trim(); return; }
@@ -3164,6 +3244,8 @@ document.addEventListener("input", e => {
     return;
   }
   if(t.dataset.target){ state.profile.targets[t.dataset.target] = +t.value || 0; save("profile"); return; }
+  if(t.dataset.calc === "hft" || t.dataset.calc === "hin"){ const ft = +((document.querySelector('[data-calc="hft"]')||{}).value || 0), inch = +((document.querySelector('[data-calc="hin"]')||{}).value || 0);
+    state.profile.calc.height = Math.round((ft * 12 + inch) * 2.54); $("#calcPreview").innerHTML = calcPreview(); save("profile"); return; }
   if(t.dataset.calc){ state.profile.calc[t.dataset.calc] = ["sex","goal"].includes(t.dataset.calc) ? t.value : +t.value; $("#calcPreview").innerHTML = calcPreview(); save("profile"); return; }
 });
 document.addEventListener("change", e => {
@@ -3186,6 +3268,8 @@ document.addEventListener("change", e => {
     if(!P.start) P.start = c.start; save("profile"); render(); return; }
   if(t.id === "vidFile"){ const f = t.files && t.files[0]; t.value = ""; uploadVid(f); return; }
   if(t.dataset.pref){ state.profile[t.dataset.pref] = t.type==="checkbox" ? t.checked : t.value; save("profile"); render(); return; }
+  if(t.dataset.calc === "hft" || t.dataset.calc === "hin"){ const ft = +((document.querySelector('[data-calc="hft"]')||{}).value || 0), inch = +((document.querySelector('[data-calc="hin"]')||{}).value || 0);
+    state.profile.calc.height = Math.round((ft * 12 + inch) * 2.54); $("#calcPreview").innerHTML = calcPreview(); save("profile"); return; }
   if(t.dataset.calc){ state.profile.calc[t.dataset.calc] = ["sex","goal"].includes(t.dataset.calc) ? t.value : +t.value; $("#calcPreview").innerHTML = calcPreview(); save("profile"); return; }
 });
 document.addEventListener("keydown", e => {
@@ -3269,8 +3353,8 @@ setAppH(); window.addEventListener("resize", setAppH); if(window.visualViewport)
 /* ==========================================================================
    SUPABASE SETUP — paste your project's values here (Settings → API)
    ========================================================================== */
-const SUPABASE_URL = "https://vcurpxoxyvzokyyoeeir.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_nyto9VAlT4hsQ5SLkX7zPQ_zW5YrFQO";
+const SUPABASE_URL = "https://YOUR-PROJECT-ID.supabase.co";
+const SUPABASE_ANON_KEY = "YOUR-ANON-PUBLIC-KEY";
 const VIDEO_BUCKET = "exercise-videos";
 /* ========================================================================== */
 
